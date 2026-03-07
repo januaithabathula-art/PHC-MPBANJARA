@@ -259,8 +259,14 @@ function initFirebase(){
       if(!snap.val()) showSyncStatus('🔴 Offline');
     });
   } catch(e){
-    console.warn('Firebase init failed, using offline mode',e);
-    showSyncStatus('🔴 Offline mode');
+    console.warn('Firebase init failed',e);
+    showSyncStatus('🔴 Error: '+e.message);
+    // Show error on screen for debugging
+    const errDiv=document.createElement('div');
+    errDiv.style.cssText='position:fixed;bottom:60px;left:10px;right:10px;background:#b71c1c;color:#fff;padding:10px;border-radius:10px;font-size:11px;z-index:9999;font-family:monospace';
+    errDiv.textContent='Firebase Error: '+e.message;
+    document.body.appendChild(errDiv);
+    setTimeout(()=>errDiv.remove(),10000);
   }
 }
 
@@ -475,10 +481,10 @@ function buildScheduleTab(){
 // Load Firebase SDK then init
 (function loadFirebase(){
   const s1=document.createElement('script');
-  s1.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+  s1.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
   s1.onload=function(){
     const s2=document.createElement('script');
-    s2.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+    s2.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js';
     s2.onload=initFirebase;
     document.head.appendChild(s2);
   };

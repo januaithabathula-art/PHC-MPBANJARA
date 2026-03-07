@@ -322,7 +322,13 @@ function initFirebase(){
     });
   } catch(e){
     console.warn('Firebase init failed',e);
-    showSyncStatus('🔴 Offline mode');
+    showSyncStatus('🔴 Error: '+e.message);
+    // Show error on screen for debugging
+    const errDiv=document.createElement('div');
+    errDiv.style.cssText='position:fixed;bottom:60px;left:10px;right:10px;background:#b71c1c;color:#fff;padding:10px;border-radius:10px;font-size:11px;z-index:9999;font-family:monospace';
+    errDiv.textContent='Firebase Error: '+e.message;
+    document.body.appendChild(errDiv);
+    setTimeout(()=>errDiv.remove(),10000);
   }
 }
 
