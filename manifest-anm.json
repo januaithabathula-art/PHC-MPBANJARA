@@ -1,0 +1,14 @@
+{
+  "name": "ANM Due Slip — PHC MP Banjara",
+  "short_name": "ANM PHC",
+  "description": "ANM Vaccine Due Slip Entry — PHC MP Banjara",
+  "start_url": "./ANM_App.html",
+  "display": "standalone",
+  "background_color": "#0d2a6e",
+  "theme_color": "#0d2a6e",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
