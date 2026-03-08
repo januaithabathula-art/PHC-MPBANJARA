@@ -429,7 +429,7 @@ function buildRegister(){
   const sch=SCH[sc.name];
   const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
   document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
-  const saved=(d.sessions||[]).find(s=>s.day===day&&s.week===wk&&s.date===TSTR);
+  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
     document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
     const k=v.replace(/[^a-z0-9]/gi,'_');
     const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
@@ -529,7 +529,7 @@ function saveAll(){
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
   let any=false;const newOpenDoses={};
-  const ei=d.sessions?d.sessions.findIndex(s=>s.day===day&&s.week===wk&&s.date===TSTR):-1;
+  const ei=d.sessions?d.sessions.findIndex(s=>s.date===TSTR):-1;
   const existingData=ei>=0?d.sessions[ei].data:{};
   const data={};
   VACCINES.forEach(v=>{
@@ -573,7 +573,7 @@ function clearAll(){
   const wk=parseInt(document.getElementById('reg-week').value||0);
   // Only clear PO fields — keep ANM due intact
   if(d.sessions){
-    const ei=d.sessions.findIndex(s=>s.day===day&&s.week===wk&&s.date===TSTR);
+    const ei=d.sessions.findIndex(s=>s.date===TSTR);
     if(ei>=0){
       VACCINES.forEach(v=>{
         if(d.sessions[ei].data[v]){
@@ -635,7 +635,7 @@ function syncANMAdm(){
   const d=DB[sc.name]||blankSC();
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
-  const saved=(d.sessions||[]).find(s=>s.day===day&&s.week===wk&&s.date===TSTR);
+  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
   if(!saved) return;
   let updated=false;
   VACCINES.forEach(v=>{

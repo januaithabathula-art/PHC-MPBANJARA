@@ -353,7 +353,7 @@ function buildDueForm(){
   const sch=SCH[sc.name];
   const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
   document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
-  const saved=(d.sessions||[]).find(s=>s.day===day&&s.week===wk&&s.date===TSTR);
+  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
   const badge=document.getElementById('due-saved-badge');
   badge.innerHTML=saved?'<div class="saved-badge">&#10003; Due slip saved for today</div>':'';
   document.getElementById('due-body').innerHTML=VACCINES.map(v=>{
@@ -419,7 +419,7 @@ function saveDue(){
   });
   if(!any&&!Object.keys(admData).length){toast('Enter at least one value');return;}
   if(!d.sessions)d.sessions=[];
-  const ei=d.sessions.findIndex(s=>s.day===day&&s.week===wk&&s.date===TSTR);
+  const ei=d.sessions.findIndex(s=>s.date===TSTR);
   if(ei>=0){
     // Merge — keep PO's iss/wst/disc, update due, adm and auto-calc ret
     VACCINES.forEach(v=>{
