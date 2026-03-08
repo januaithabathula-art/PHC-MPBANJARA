@@ -249,8 +249,13 @@ function initFirebase(){
         if(document.getElementById('s-sc').classList.contains('active')) buildDueForm();
         else buildDash();
       } else {
-        // No cloud data yet — push local data up
-        firebaseDB.ref('phc_data').set(DB);
+        // Only push local data if it has actual session records
+        const hasData = Object.values(DB).some(sc =>
+          sc.sessions && sc.sessions.length > 0
+        );
+        if(hasData){
+          firebaseDB.ref('phc_data').set(DB);
+        }
         firebaseReady=true;
       }
       showSyncStatus('🟢 Synced');

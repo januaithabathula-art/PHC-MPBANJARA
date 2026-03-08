@@ -312,7 +312,13 @@ function initFirebase(){
         if(document.getElementById('s-sc').classList.contains('active')) buildRegister();
         else buildDash();
       } else {
-        firebaseDB.ref('phc_data').set(DB);
+        // Only push local data if it has actual session records
+        const hasData = Object.values(DB).some(sc =>
+          sc.sessions && sc.sessions.length > 0
+        );
+        if(hasData){
+          firebaseDB.ref('phc_data').set(DB);
+        }
         firebaseReady=true;
       }
       showSyncStatus('🟢 Synced');
