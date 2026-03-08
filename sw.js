@@ -1,34 +1,37 @@
-const CACHE = 'phc-banjara-v1';
-const ASSETS = [
-  './ANM_App.html',
-  './PO_App.html',
-  './manifest-anm.json',
-  './manifest-po.json',
-  './icon-192.png',
-  './icon-512.png'
-];
+// PHC Banjara Service Worker - v3 (cache busted)
+const CACHE = 'phc-banjara-v3';
 
+// On install - don't pre-cache, just activate immediately
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS).catch(()=>{}))
-  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
+  // Delete ALL old caches
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// Network first always - no caching of HTML files
 self.addEventListener('fetch', e => {
-  // Network first for Firebase, cache fallback for app files
-  if (e.request.url.includes('firebase') || e.request.url.includes('googleapis')) {
-    return; // let Firebase handle its own requests
+  // Skip Firebase requests entirely
+  if (e.request.url.includes('firebase') || 
+      e.request.url.includes('googleapis') ||
+      e.request.url.includes('gstatic')) {
+    return;
   }
+  // For HTML files - always fetch fresh from network
+  if (e.request.url.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request, {cache: 'no-store'})
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // For other assets - network first, cache fallback
   e.respondWith(
     fetch(e.request)
       .then(res => {
