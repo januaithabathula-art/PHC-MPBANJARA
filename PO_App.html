@@ -582,9 +582,13 @@ function saveAll(){
   if(!d.sessions)d.sessions=[];
   const rec={date:TSTR,day,week:wk,data,at:new Date().toISOString()};
   if(ei>=0)d.sessions[ei]=rec;else d.sessions.push(rec);
-  DB[sc.name]=d;save();
+  DB[sc.name]=d;
+  // Diagnostic: show what we're saving
+  const testSess=(DB[sc.name].sessions||[]).find(s=>s.date===TSTR);
+  const testIss=testSess&&testSess.data['OPV']&&testSess.data['OPV'].iss;
+  save();
   buildRegister();
-  toast('✅ Saved — stock updated');
+  toast('✅ Saved OPV iss='+testIss+' date='+TSTR);
 }
 
 function clearAll(){
