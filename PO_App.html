@@ -304,41 +304,50 @@ function initFirebase(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
-    firebaseDB.ref('phc_data').on('value', snap=>{
+
+    // Step 1: Load full DB once on startup
+    firebaseDB.ref('phc_data').once('value', snap=>{
       const data=snap.val();
       if(data){
         DB=data;
         SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
-        firebaseReady=true;
-        // Refresh whichever screen is currently active
-        if(document.getElementById('s-sc').classList.contains('active')){
-          buildRegister(); // rebuild PO register with latest data from ANM
-        } else {
-          buildDash();
-        }
-        checkAlerts();
-      } else {
-        // Firebase is empty — fresh start, don't push local data
-        // Each app will write to Firebase only when user saves
-        firebaseReady=true;
       }
+      firebaseReady=true;
+      buildDash();
+      checkAlerts();
       showSyncStatus('🟢 Synced');
     });
+
+    // Step 2: Listen for changes to individual SCs
+    firebaseDB.ref('phc_data').on('child_changed', snap=>{
+      const scName=snap.key;
+      const data=snap.val();
+      if(data){ DB[scName]=data; }
+      try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      showSyncStatus('🟢 Synced');
+      // Refresh view if currently showing this SC
+      const scScreen=document.getElementById('s-sc');
+      if(scScreen.classList.contains('active') && SC_LIST[CUR] && SC_LIST[CUR].name===scName){
+        buildRegister();
+      } else {
+        buildDash();
+      }
+      checkAlerts();
+    });
+
+    // Step 3: Watch connection state
     firebaseDB.ref('.info/connected').on('value', snap=>{
       if(!snap.val()) showSyncStatus('🔴 Offline');
     });
+
   } catch(e){
-    console.warn('Firebase init failed',e);
+    console.warn('Firebase error',e);
     showSyncStatus('🔴 Error: '+e.message);
-    // Show error on screen for debugging
-    const errDiv=document.createElement('div');
-    errDiv.style.cssText='position:fixed;bottom:60px;left:10px;right:10px;background:#b71c1c;color:#fff;padding:10px;border-radius:10px;font-size:11px;z-index:9999;font-family:monospace';
-    errDiv.textContent='Firebase Error: '+e.message;
-    document.body.appendChild(errDiv);
-    setTimeout(()=>errDiv.remove(),10000);
+    firebaseReady=false;
   }
 }
+
 
 function showSyncStatus(msg){
   let el=document.getElementById('sync-status');
@@ -362,9 +371,21 @@ function showSyncStatus(msg){
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
   if(firebaseDB&&firebaseReady){
-    firebaseDB.ref('phc_data').set(DB)
+    // Write only changed SC using update() — never overwrites other app's data
+    const updates={};
+    const curSC=CUR!=null?SC_LIST[CUR]:null;
+    if(curSC&&DB[curSC.name]){
+      // Write only the SC currently being edited
+      updates['phc_data/'+curSC.name]=DB[curSC.name];
+    } else {
+      // Fallback: write all SCs
+      SC_LIST.forEach(sc=>{
+        if(DB[sc.name]) updates['phc_data/'+sc.name]=DB[sc.name];
+      });
+    }
+    firebaseDB.ref().update(updates)
       .then(()=>showSyncStatus('🟢 Synced'))
-      .catch(()=>showSyncStatus('🟡 Sync pending'));
+      .catch(e=>showSyncStatus('🟡 '+e.message));
   }
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
