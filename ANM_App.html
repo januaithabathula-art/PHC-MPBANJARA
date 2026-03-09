@@ -265,13 +265,16 @@ function initFirebase(){
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
       }
       showSyncStatus('🟢 Synced');
+      // Show what MP Banjara iss value is
+      const mpB=data&&data['MP Banjara'];
+      const sess=mpB&&mpB.sessions&&mpB.sessions.find(s=>s.date===TSTR);
+      const opvIss=sess&&sess.data&&sess.data['OPV']&&sess.data['OPV'].iss;
+      toast('Firebase: OPV iss='+( opvIss||'none'));
       const scScreen=document.getElementById('s-sc');
       if(scScreen.classList.contains('active') && SC_LIST[CUR]){
         buildDueForm();
-        toast('🔄 Updated from Firebase');
       } else {
         buildDash();
-        toast('🔄 Firebase sync received');
       }
     });
 
