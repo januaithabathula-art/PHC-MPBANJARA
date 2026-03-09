@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firebase Sync Test</title>
+<style>
+body{font-family:sans-serif;padding:20px;max-width:500px;margin:0 auto}
+button{background:#1a5c2a;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-size:14px;margin:5px;cursor:pointer;width:100%}
+.log{background:#f5f5f5;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;font-family:monospace;min-height:100px;max-height:300px;overflow-y:auto}
+.ok{color:green;font-weight:bold}
+.err{color:red;font-weight:bold}
+.info{color:blue}
+input{border:2px solid #ccc;border-radius:8px;padding:10px;font-size:16px;width:100%;margin:5px 0;box-sizing:border-box}
+</style>
+</head>
+<body>
+<h2>🔥 Firebase Sync Test</h2>
+<div id="status" style="background:#eee;padding:10px;border-radius:8px;font-weight:bold;margin-bottom:10px">Loading...</div>
+
+<input type="number" id="testval" placeholder="Enter any number" value="42">
+<button onclick="writeTest()">📤 WRITE to Firebase</button>
+<button onclick="readTest()">📥 READ from Firebase</button>
+<button onclick="clearLog()">Clear Log</button>
+
+<div class="log" id="log"></div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara",
+  storageBucket: "phc-banjara.firebasestorage.app",
+  messagingSenderId: "588369297675",
+  appId: "1:588369297675:web:9265b6db25e5e3cd6ea20e"
+};
+
+let db=null;
+function log(msg,cls=''){
+  const d=document.getElementById('log');
+  const t=new Date().toLocaleTimeString();
+  d.innerHTML='<div class="'+(cls||'')+'">['+t+'] '+msg+'</div>'+d.innerHTML;
+}
+function setStatus(msg,color){
+  const s=document.getElementById('status');
+  s.textContent=msg; s.style.background=color||'#eee';
+}
+
+// Load Firebase
+const s1=document.createElement('script');
+s1.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
+s1.onload=function(){
+  const s2=document.createElement('script');
+  s2.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js';
+  s2.onload=function(){
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db=firebase.database();
+      log('Firebase SDK loaded ✅','ok');
+      
+      // Test connection
+      db.ref('.info/connected').on('value', snap=>{
+        if(snap.val()){
+          setStatus('🟢 Connected to Firebase','#c8e6c9');
+          log('Connected to Firebase ✅','ok');
+        } else {
+          setStatus('🔴 Disconnected','#ffcdd2');
+          log('Disconnected from Firebase','err');
+        }
+      });
+
+      // Listen for test_value changes
+      db.ref('test_sync').on('value', snap=>{
+        const val=snap.val();
+        log('📥 Received from Firebase: '+JSON.stringify(val),'info');
+      });
+
+    } catch(e){
+      log('Firebase init ERROR: '+e.message,'err');
+      setStatus('❌ Error: '+e.message,'#ffcdd2');
+    }
+  };
+  document.head.appendChild(s2);
+};
+document.head.appendChild(s1);
+
+function writeTest(){
+  if(!db){log('Firebase not ready','err');return;}
+  const val=document.getElementById('testval').value;
+  const data={value:parseInt(val), from:'test', time:new Date().toISOString()};
+  log('📤 Writing to Firebase: '+JSON.stringify(data),'info');
+  db.ref('test_sync').set(data)
+    .then(()=>log('Write SUCCESS ✅','ok'))
+    .catch(e=>log('Write ERROR: '+e.message,'err'));
+}
+
+function readTest(){
+  if(!db){log('Firebase not ready','err');return;}
+  db.ref('test_sync').once('value', snap=>{
+    log('📥 Read result: '+JSON.stringify(snap.val()),'ok');
+  }).catch(e=>log('Read ERROR: '+e.message,'err'));
+}
+
+function clearLog(){document.getElementById('log').innerHTML='';}
+</script>
+</body>
+</html>
