@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a5c36">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PHC Banjara">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>PHC MP BANJARA — Vaccine Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g1:#0a5c36;--g2:#1a8a52;--g3:#2db870;--gl:#e6f7ee;
+  --blue:#1565c0;--bl:#e3f0ff;
+  --orange:#e65100;--ol:#fff3e0;
+  --red:#c62828;--rl:#ffebee;
+  --yellow:#f57f17;--yl:#fffde7;
+  --bg:#f2f5f2;--card:#fff;
+  --text:#0d1a0d;--muted:#607060;--border:#ccd8cc;
+  --nav-h:64px;--top-h:56px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;flex-direction:column;}
+
+/* ── SPLASH SCREEN ── */
+#splash{position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-icon{font-size:72px;margin-bottom:16px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.splash-name{color:#fff;font-size:22px;font-weight:900;letter-spacing:.5px;}
+.splash-sub{color:rgba(255,255,255,.65);font-size:12px;margin-top:6px;text-align:center;padding:0 30px;}
+.splash-badge{background:var(--g3);color:var(--g1);font-size:10px;font-weight:800;padding:4px 14px;border-radius:20px;margin-top:14px;}
+.splash-bar{width:180px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:24px;overflow:hidden;}
+.splash-prog{height:100%;background:var(--g3);border-radius:2px;animation:load 1.8s ease forwards;}
+@keyframes load{from{width:0}to{width:100%}}
+
+/* ── INSTALL BANNER ── */
+#install-banner{background:var(--g1);color:#fff;padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:10px;font-size:13px;}
+#install-banner.show{display:flex;}
+.install-btn{background:var(--g3);color:var(--g1);border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;}
+
+/* ── TOP BAR ── */
+.topbar{height:var(--top-h);background:var(--g1);color:#fff;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;position:relative;box-shadow:0 2px 10px rgba(0,0,0,.2);}
+.topbar-back{font-size:22px;cursor:pointer;width:36px;text-align:center;display:none;}
+.topbar-icon{font-size:26px;}
+.topbar-info{flex:1;}
+.topbar-title{font-size:16px;font-weight:800;line-height:1.2;}
+.topbar-sub{font-size:10px;opacity:.7;margin-top:1px;}
+.topbar-actions{display:flex;gap:10px;font-size:20px;}
+.topbar-actions span{cursor:pointer;opacity:.85;}
+
+/* ── ROLE CHIP ── */
+.role-chip{background:rgba(255,255,255,.15);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#fff;}
+
+/* ── PAGE CONTAINER ── */
+.page-wrap{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 10px);}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{height:var(--nav-h);background:#fff;border-top:1px solid var(--border);display:flex;align-items:stretch;position:fixed;bottom:0;left:0;right:0;padding-bottom:var(--safe-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.08);z-index:80;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;border:none;background:none;font-family:inherit;transition:all .2s;position:relative;}
+.nav-item .nav-ic{font-size:22px;transition:transform .2s;}
+.nav-item .nav-lbl{font-size:10px;font-weight:700;color:var(--muted);transition:color .2s;}
+.nav-item.active .nav-lbl{color:var(--g1);}
+.nav-item.active .nav-ic{transform:scale(1.15);}
+.nav-item::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:3px;background:var(--g3);border-radius:3px 3px 0 0;transform:scaleX(0);transition:transform .2s;}
+.nav-item.active::after{transform:scaleX(1);}
+.nav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:9px;font-weight:800;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px;}
+.page.active{display:block;animation:slideIn .25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.card-title{font-size:14px;font-weight:800;color:var(--g1);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:400;}
+
+/* ── HERO STATS ── */
+.hero{background:linear-gradient(135deg,var(--g1) 0%,var(--g2) 100%);border-radius:20px;padding:20px;margin-bottom:14px;color:#fff;position:relative;overflow:hidden;}
+.hero::before{content:'💉';position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.1;}
+.hero-greeting{font-size:12px;opacity:.75;font-weight:600;text-transform:uppercase;letter-spacing:.8px;}
+.hero-name{font-size:20px;font-weight:900;margin-top:2px;}
+.hero-sub{font-size:11px;opacity:.65;margin-top:3px;}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;}
+.hero-stat{background:rgba(255,255,255,.15);border-radius:12px;padding:10px;text-align:center;}
+.hero-stat .num{font-size:24px;font-weight:900;line-height:1;}
+.hero-stat .lbl{font-size:9px;opacity:.75;margin-top:3px;font-weight:700;text-transform:uppercase;}
+
+/* ── SESSION BANNER ── */
+.sess-banner{border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.sess-banner.today{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;}
+.sess-banner.upcoming{background:var(--yl);color:#5d4e00;}
+.sess-banner .sb-icon{font-size:32px;flex-shrink:0;}
+.sess-banner h3{font-size:14px;font-weight:800;}
+.sess-banner p{font-size:11px;opacity:.8;margin-top:2px;}
+
+/* ── QUICK ACTIONS ── */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.quick-btn{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .2s;box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.quick-btn:active{transform:scale(.97);background:var(--gl);}
+.quick-btn .qb-ic{font-size:28px;}
+.quick-btn .qb-lbl{font-size:12px;font-weight:700;color:var(--text);text-align:center;}
+.quick-btn .qb-sub{font-size:10px;color:var(--muted);text-align:center;}
+
+/* ── FIELDS ── */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border .2s;-webkit-appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(26,138,82,.1);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 20px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;width:100%;}
+.btn:active{transform:scale(.98);}
+.btn-g{background:var(--g1);color:#fff;box-shadow:0 4px 14px rgba(10,92,54,.3);}
+.btn-g:hover{background:var(--g2);}
+.btn-b{background:var(--blue);color:#fff;}
+.btn-o{background:var(--orange);color:#fff;}
+.btn-out{background:#fff;color:var(--g1);border:1.5px solid var(--g1);}
+.btn-wa{background:#25d366;color:#fff;}
+.btn-sm{padding:8px 14px;font-size:12px;width:auto;}
+.btn-row{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;}
+.bg{background:var(--gl);color:var(--g1);}
+.bb{background:var(--bl);color:var(--blue);}
+.bo{background:var(--ol);color:var(--orange);}
+.br{background:var(--rl);color:var(--red);}
+.by{background:var(--yl);color:var(--yellow);}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:var(--gl);color:var(--g1);font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:8px 8px;text-align:left;}
+.tbl td{padding:8px 8px;border-bottom:1px solid #f0f5f0;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl td input{border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:12px;font-family:inherit;width:100%;outline:none;}
+.tbl td input:focus{border-color:var(--g2);}
+
+/* ── ALERT ── */
+.alert{padding:11px 14px;border-radius:10px;font-size:12px;margin-bottom:12px;display:flex;gap:9px;align-items:flex-start;line-height:1.5;}
+.alert-g{background:var(--gl);border-left:3px solid var(--g2);color:#0a3d1f;}
+.alert-b{background:var(--bl);border-left:3px solid var(--blue);color:#0a2a5c;}
+.alert-r{background:var(--rl);border-left:3px solid var(--red);color:#6a0000;}
+.alert-y{background:var(--yl);border-left:3px solid var(--yellow);color:#5d4e00;}
+
+/* ── ROLE LOGIN SCREEN ── */
+#login-screen{position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;padding:24px;}
+#login-screen.hide{display:none;}
+.login-logo{font-size:64px;margin-bottom:12px;}
+.login-title{color:#fff;font-size:22px;font-weight:900;text-align:center;}
+.login-sub{color:rgba(255,255,255,.65);font-size:12px;text-align:center;margin-top:6px;margin-bottom:28px;}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:340px;}
+.role-card{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:16px;padding:18px 12px;text-align:center;cursor:pointer;transition:all .2s;}
+.role-card:active{background:rgba(255,255,255,.25);transform:scale(.97);}
+.role-ic{font-size:36px;margin-bottom:8px;}
+.role-name{color:#fff;font-size:13px;font-weight:800;}
+.role-desc{color:rgba(255,255,255,.6);font-size:10px;margin-top:3px;}
+
+/* ── MONO ── */
+.mono{font-family:'JetBrains Mono',monospace;}
+.ok{color:var(--g1);font-weight:700;}
+.warn{color:var(--yellow);font-weight:700;}
+.danger{color:var(--red);font-weight:700;}
+
+/* ── SECTION HEADER ── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sec-title{font-size:13px;font-weight:800;color:var(--text);}
+.sec-link{font-size:12px;color:var(--g2);font-weight:700;cursor:pointer;}
+
+/* ── BOTTOM SHEET ── */
+.sheet-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.sheet-ov.open{display:flex;}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:16px 16px calc(16px + var(--safe-bottom));max-height:88vh;overflow-y:auto;animation:su .25s ease;}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 14px;}
+.sheet-title{font-size:16px;font-weight:800;color:var(--g1);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.sheet-close{font-size:22px;color:var(--muted);cursor:pointer;line-height:1;}
+
+/* ── REPORT MSG BOX ── */
+.msg-box{background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:12px;padding:13px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:#1b5e20;margin-bottom:12px;max-height:260px;overflow-y:auto;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 16px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(40px);background:#222;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:999;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── VACCINE MINI CARDS ── */
+.vax-mini{background:#fafff9;border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
+.vax-mini-name{font-size:12px;font-weight:700;color:var(--g1);margin-bottom:6px;}
+.vax-mini-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.vax-mini-row input{border:1px solid #ddd;border-radius:7px;padding:7px 4px;font-size:13px;text-align:center;font-family:inherit;outline:none;background:#fff;}
+.vax-mini-row input:focus{border-color:var(--g2);}
+.vax-mini-lbl{font-size:9px;color:var(--muted);text-align:center;margin-top:2px;font-weight:700;text-transform:uppercase;}
+
+/* ── SC DASHBOARD GRID ── */
+.sc-dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sc-dash-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:13px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.sc-dash-card:active{transform:scale(.97);}
+.sc-dash-card.wed{border-left:4px solid var(--g2);}
+.sc-dash-card.sat{border-left:4px solid var(--blue);}
+.sc-dash-card.both{border-left:4px solid var(--orange);}
+.sc-dash-card .sc-num{position:absolute;top:8px;right:10px;font-size:11px;font-weight:800;color:var(--muted);}
+.sc-dash-card .sc-name{font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px;padding-right:20px;}
+.sc-dash-card .sc-day{font-size:10px;font-weight:700;margin-bottom:6px;}
+.sc-dash-card.wed .sc-day{color:var(--g2);}
+.sc-dash-card.sat .sc-day{color:var(--blue);}
+.sc-dash-card .sc-stats{display:flex;gap:6px;flex-wrap:wrap;}
+.sc-dash-card .sc-stat-pill{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--gl);color:var(--g1);}
+.sc-issue-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f5f0;}
+.sc-issue-row:last-child{border-bottom:none;}
+.sc-issue-vax{font-size:13px;font-weight:700;}
+.sc-issue-vials{font-size:13px;font-weight:800;color:var(--g1);}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{background:#e0ebe0;border-radius:10px;height:7px;overflow:hidden;margin-top:4px;}
+.prog-bar{height:100%;border-radius:10px;background:var(--g2);}
+
+/* ── WEEK TABS ── */
+.week-tab{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;color:var(--muted);transition:all .2s;}
+.week-tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
+.week-num-tab{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--muted);transition:all .2s;}
+.week-num-tab.active{background:var(--g2);color:#fff;border-color:var(--g2);}
+.site-card{background:#fafff9;border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:6px;}
+.site-day-header{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;padding:8px 0 6px;color:var(--g1);border-bottom:1px solid var(--border);margin-bottom:8px;}
+
+/* ── HISTORY ITEM ── */
+/* ── HISTORY ITEM ── */
+.hist-item{background:#fff;border-radius:12px;padding:13px;margin-bottom:10px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.hist-item h4{font-size:13px;font-weight:700;}
+.hist-item p{font-size:11px;color:var(--muted);margin-top:3px;}
+.hist-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-icon">💉</div>
+  <div class="splash-name">PHC MP BANJARA</div>
+  <div class="splash-sub">Medical & Health Dept<br>Bhadradri Kothagudem</div>
+  <div class="splash-badge">VACCINE TRACKER</div>
+  <div class="splash-bar"><div class="splash-prog"></div></div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <span>📲 Install this app on your phone!</span>
+  <button class="install-btn" id="install-btn">Install</button>
+  <span onclick="document.getElementById('install-banner').classList.remove('show')" style="cursor:pointer;font-size:18px">✕</span>
+</div>
+
+<!-- LOGIN / ROLE SELECT -->
+<div id="login-screen">
+  <div class="login-logo">💉</div>
+  <div class="login-title">PHC MP BANJARA</div>
+  <div class="login-sub">Vaccine Tracker App<br>Select your role to continue</div>
+  <div class="role-grid">
+    <div class="role-card" onclick="selectRole('pharmacist')">
+      <div class="role-ic">💊</div>
+      <div class="role-name">Pharmacist</div>
+      <div class="role-desc">Stock & Issue</div>
+    </div>
+    <div class="role-card" onclick="selectRole('anm')">
+      <div class="role-ic">👩‍⚕️</div>
+      <div class="role-name">ANM</div>
+      <div class="role-desc">Session Report</div>
+    </div>
+    <div class="role-card" onclick="selectRole('mo')">
+      <div class="role-ic">👨‍⚕️</div>
+      <div class="role-name">Medical Officer</div>
+      <div class="role-desc">Overview & Reports</div>
+    </div>
+    <div class="role-card" onclick="selectRole('bmo')">
+      <div class="role-ic">🏛️</div>
+      <div class="role-name">BMO / District</div>
+      <div class="role-desc">District Dashboard</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-back" id="back-btn" onclick="goBack()">←</span>
+  <span class="topbar-icon" id="topbar-icon">💉</span>
+  <div class="topbar-info">
+    <div class="topbar-title" id="topbar-title">PHC MP BANJARA</div>
+    <div class="topbar-sub" id="topbar-sub">Vaccine Tracker</div>
+  </div>
+  <div class="topbar-actions">
+    <span id="role-badge" class="role-chip"></span>
+    <span onclick="showNotifications()" title="Notifications">🔔</span>
+    <span onclick="showSheet('menu-sheet')" title="Menu">⋮</span>
+  </div>
+</div>
+
+<!-- PAGE CONTAINER -->
+<div class="page-wrap" id="page-wrap">
+
+  <!-- ══ HOME ══ -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <div class="hero-greeting">Good <span id="greeting-time"></span></div>
+      <div class="hero-name" id="hero-role-name">Pharmacist</div>
+      <div class="hero-sub">PHC MP BANJARA · Med & Health Dept · <span id="hero-date"></span></div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num" id="h-stock">0</div><div class="lbl">PHC Stock</div></div>
+        <div class="hero-stat"><div class="num" id="h-sc">0</div><div class="lbl">Sub Centres</div></div>
+        <div class="hero-stat"><div class="num" id="h-issued">0</div><div class="lbl">Issued (Vials)</div></div>
+      </div>
+    </div>
+
+    <div id="session-banner-home"></div>
+
+    <div class="sec-hd"><div class="sec-title">⚡ Quick Actions</div></div>
+    <div class="quick-grid" id="quick-grid"></div>
+
+    <div class="sec-hd">
+      <div class="sec-title">📅 Next Sessions</div>
+      <div class="sec-link" onclick="navTo('sessions')">See all →</div>
+    </div>
+    <div id="next-sessions-home"></div>
+
+    <div class="sec-hd">
+      <div class="sec-title">🏥 Sub Centres</div>
+      <div class="sec-link" onclick="navTo('sessions')">Schedule →</div>
+    </div>
+    <div id="sc-dashboard-grid"></div>
+
+    <div class="sec-hd">
+      <div class="sec-title">📦 Stock Alerts</div>
+      <div class="sec-link" onclick="navTo('stock')">View all →</div>
+    </div>
+    <div id="stock-alerts-home"></div>
+  </div>
+
+  <!-- ══ ISSUE ══ -->
+  <div class="page" id="page-issue">
+    <div class="alert alert-b">📦 Enter number of <strong>vials</strong> to issue. Equivalent doses shown automatically per vaccine.</div>
+    <div class="card">
+      <div class="card-title">📤 Issue to Sub Centre</div>
+      <div class="field"><label>Issue Date</label><input type="date" id="i-date"></div>
+      <div class="field"><label>Sub Centre</label><select id="i-sc"><option value="">-- Select Sub Centre --</option></select></div>
+      <div class="g2">
+        <div class="field"><label>Session Day</label><select id="i-sessday"><option>Wednesday</option><option>Saturday</option></select></div>
+        <div class="field"><label>ANM Name</label><input type="text" id="i-anm" placeholder="ANM name"></div>
+      </div>
+      <div class="card-title" style="margin-top:4px">💉 Vials to Issue</div>
+      <div id="issue-vax-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="saveIssue()">💾 Save Issue & Deduct Vials from Stock</button>
+        <button class="btn btn-b" onclick="generateIssueMsg()">📱 Generate WhatsApp Message</button>
+        <button class="btn btn-out" onclick="clearIssue()">🗑️ Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPORT (ANM) ══ -->
+  <div class="page" id="page-report">
+    <div class="alert alert-g">📋 Fill after every Wednesday / Saturday session and send to PHC group</div>
+    <div class="card">
+      <div class="card-title">📋 Session Report</div>
+      <div class="field"><label>Sub Centre</label><select id="r-sc"><option value="">-- Select --</option></select></div>
+      <div class="g2">
+        <div class="field"><label>Session Date</label><input type="date" id="r-date"></div>
+        <div class="field"><label>Session Day</label><select id="r-sessday"><option>Wednesday</option><option>Saturday</option></select></div>
+      </div>
+      <div class="field"><label>ANM Name</label><input type="text" id="r-anm" placeholder="Your name"></div>
+      <div class="field"><label>Session Site / Village</label><input type="text" id="r-site" placeholder="Village name"></div>
+      <div class="card-title" style="margin-top:4px">💉 Vaccine Details</div>
+      <div id="report-vax-list"></div>
+      <div class="g2">
+        <div class="field"><label>Beneficiaries</label><input type="number" id="r-bene" placeholder="0" min="0"></div>
+        <div class="field"><label>Drop Outs</label><input type="number" id="r-drop" placeholder="0" min="0"></div>
+      </div>
+      <div class="field"><label>Cold Chain</label>
+        <select id="r-cold"><option>✅ Maintained</option><option>⚠️ Minor issue</option><option>❌ Broken — reported</option></select>
+      </div>
+      <div class="field"><label>AEFI?</label>
+        <select id="r-aefi"><option>No AEFI</option><option>Yes — reported to MO</option></select>
+      </div>
+      <div class="field"><label>Remarks</label><textarea id="r-remarks" rows="2" placeholder="Any issues..."></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-wa" onclick="generateWAReport()">📱 Generate & Send WhatsApp</button>
+        <button class="btn btn-g" onclick="saveReport()">💾 Save Report</button>
+        <button class="btn btn-out" onclick="clearReport()">🗑️ Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STOCK ══ -->
+  <div class="page" id="page-stock">
+    <div class="card">
+      <div class="card-title">📥 Receive Vaccines (Enter Vials)</div>
+      <div class="g2">
+        <div class="field"><label>Date</label><input type="date" id="recv-date"></div>
+        <div class="field"><label>From</label><input type="text" id="recv-from" placeholder="District / Cold Chain"></div>
+      </div>
+      <div id="recv-vax-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="saveReceive()">💾 Save Received Vials & Update Stock</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 Current Stock Register <span style="font-size:10px;font-weight:400;color:var(--muted)">— All quantities in Vials</span></div>
+      <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Vaccine</th><th>Recv (Vials)</th><th>Issued (Vials)</th><th>Stock (Vials)</th><th>Status</th></tr></thead>
+        <tbody id="stock-body"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SESSIONS ══ -->
+  <div class="page" id="page-sessions">
+
+    <!-- Week selector -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+      <button class="week-tab active" onclick="showWeek('week',this)">📅 This Week</button>
+      <button class="week-tab" onclick="showWeek('monthly',this)">🗓️ Monthly Plan</button>
+      <button class="week-tab" onclick="showWeek('sc',this)">🏥 By Sub Centre</button>
+    </div>
+
+    <!-- THIS WEEK view -->
+    <div id="view-week">
+      <div class="alert alert-g">💉 Sessions every <strong>Wednesday & Saturday</strong> — Burgampahad Mandal 2025</div>
+      <div id="sessions-list"></div>
+    </div>
+
+    <!-- MONTHLY PLAN view -->
+    <div id="view-monthly" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="week-num-tab active" onclick="showWeekNum(1,this)">1st Week</button>
+        <button class="week-num-tab" onclick="showWeekNum(2,this)">2nd Week</button>
+        <button class="week-num-tab" onclick="showWeekNum(3,this)">3rd Week</button>
+        <button class="week-num-tab" onclick="showWeekNum(4,this)">4th Week</button>
+      </div>
+      <div id="monthly-content"></div>
+    </div>
+
+    <!-- BY SUB CENTRE view -->
+    <div id="view-sc" style="display:none">
+      <div class="field"><label>Select Sub Centre</label>
+        <select id="sc-schedule-select" onchange="showSCSchedule(this.value)">
+          <option value="">-- Select Sub Centre --</option>
+        </select>
+      </div>
+      <div id="sc-schedule-detail"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ REPORTS PAGE ══ -->
+  <div class="page" id="page-reports">
+    <div class="quick-grid">
+      <div class="quick-btn" onclick="exportData('stock')">
+        <div class="qb-ic">📦</div><div class="qb-lbl">Stock Report</div><div class="qb-sub">Download CSV</div>
+      </div>
+      <div class="quick-btn" onclick="exportData('issue')">
+        <div class="qb-ic">📤</div><div class="qb-lbl">Issue Register</div><div class="qb-sub">Download CSV</div>
+      </div>
+      <div class="quick-btn" onclick="exportData('report')">
+        <div class="qb-ic">📋</div><div class="qb-lbl">Session Reports</div><div class="qb-sub">Download CSV</div>
+      </div>
+      <div class="quick-btn" onclick="backupData()">
+        <div class="qb-ic">🔒</div><div class="qb-lbl">Full Backup</div><div class="qb-sub">Save JSON file</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🕐 Recent Session Reports</div>
+      <div id="recent-reports"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏥 13 Sub Centres</div>
+      <div id="sc-full-list" style="margin-bottom:8px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">👩‍⚕️ Update ANM Details</div>
+      <div class="field"><label>Sub Centre Name</label><input type="text" id="sc-name" placeholder="e.g. Banjara SC-1"></div>
+      <div class="field"><label>Village</label><input type="text" id="sc-village" placeholder="Village"></div>
+      <div class="field"><label>ANM Name</label><input type="text" id="sc-anm" placeholder="ANM name"></div>
+      <div class="g2">
+        <div class="field"><label>Phone</label><input type="tel" id="sc-phone" placeholder="Mobile no."></div>
+        <div class="field"><label>Session Day</label><select id="sc-day"><option>Wednesday</option><option>Saturday</option><option>Both</option></select></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="saveSC()">💾 Register Sub Centre</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end page-wrap -->
+
+<!-- SC DETAIL SHEET -->
+<div class="sheet-ov" id="sc-detail-sheet">
+  <div class="sheet" style="max-height:92vh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="sc-sheet-title">Sub Centre Detail</span>
+      <span class="sheet-close" onclick="hideSheet('sc-detail-sheet')">✕</span>
+    </div>
+    <div id="sc-sheet-body"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<!-- MENU SHEET -->
+<div class="sheet-ov" id="menu-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⋮ Menu <span class="sheet-close" onclick="hideSheet('menu-sheet')">✕</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-out" onclick="hideSheet('menu-sheet');showSheet('install-sheet')">📲 Install App Guide</button>
+      <button class="btn btn-out" onclick="hideSheet('menu-sheet');selectRole(null)">🔄 Change Role</button>
+      <button class="btn btn-out" onclick="hideSheet('menu-sheet');backupData()">💾 Backup Data</button>
+      <button class="btn btn-out" onclick="hideSheet('menu-sheet');restoreData()">⬆️ Restore Backup</button>
+      <button class="btn btn-out" style="color:var(--red);border-color:var(--red)" onclick="hideSheet('menu-sheet');clearAllData()">🗑️ Clear All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- INSTALL GUIDE SHEET -->
+<div class="sheet-ov" id="install-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📲 Install as Mobile App <span class="sheet-close" onclick="hideSheet('install-sheet')">✕</span></div>
+    <div class="alert alert-g" style="margin-bottom:14px">Install this as an app on your phone — works like a real Android app, no Play Store needed!</div>
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:13px">
+      <div style="background:#f8f8f8;border-radius:12px;padding:14px">
+        <div style="font-weight:800;margin-bottom:8px">📱 Android (Chrome)</div>
+        <div style="color:var(--muted);line-height:1.7">
+          1. Open this file in <strong>Chrome browser</strong><br>
+          2. Tap the <strong>⋮ menu</strong> (top right)<br>
+          3. Tap <strong>"Add to Home Screen"</strong><br>
+          4. Tap <strong>"Install"</strong> — Done! ✅<br>
+          <span style="font-size:11px;color:var(--g2)">App icon will appear on your home screen</span>
+        </div>
+      </div>
+      <div style="background:#f8f8f8;border-radius:12px;padding:14px">
+        <div style="font-weight:800;margin-bottom:8px">🍎 iPhone (Safari)</div>
+        <div style="color:var(--muted);line-height:1.7">
+          1. Open in <strong>Safari browser</strong><br>
+          2. Tap the <strong>Share button</strong> (📤)<br>
+          3. Tap <strong>"Add to Home Screen"</strong><br>
+          4. Tap <strong>"Add"</strong> — Done! ✅
+        </div>
+      </div>
+      <div style="background:#f8f8f8;border-radius:12px;padding:14px">
+        <div style="font-weight:800;margin-bottom:8px">👥 Share with ANMs</div>
+        <div style="color:var(--muted);line-height:1.7">
+          1. Send this HTML file on <strong>WhatsApp</strong><br>
+          2. ANM opens in Chrome → installs as app<br>
+          3. Works on any <strong>Android phone</strong> ✅<br>
+          4. Also works offline after first open
+        </div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-g" onclick="hideSheet('install-sheet')">Got it! ✅</button>
+    </div>
+  </div>
+</div>
+
+<!-- WA MESSAGE SHEET -->
+<div class="sheet-ov" id="wa-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📱 WhatsApp Message <span class="sheet-close" onclick="hideSheet('wa-sheet')">✕</span></div>
+    <div class="msg-box" id="wa-msg-box"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-wa" onclick="sendViaWhatsApp()">📲 Open WhatsApp & Send</button>
+      <button class="btn btn-out" onclick="copyWAMsg()">📋 Copy Message</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const SAVE_KEY='phc_banjara_app_v1';
+// Vaccines with vial sizes (doses per vial) for stock calculation
+const VACCINES=['BCG','OPV','fIPV','Hep-B','Penta','RVV','PCV','MR','JE','DPT Booster','TD','Vit-A'];
+const VACCINE_INFO={
+  'BCG':          {unit:'Vial',   dpv:20, form:'Lyophilized',  color:'#e3f0ff'},
+  'OPV':          {unit:'Vial',   dpv:20, form:'Oral Drops',   color:'#e8f5e9'},
+  'fIPV':         {unit:'Vial',   dpv:5,  form:'Injection',    color:'#fff3e0'},
+  'Hep-B':        {unit:'Vial',   dpv:10, form:'Injection',    color:'#fce4ec'},
+  'Penta':        {unit:'Vial',   dpv:10, form:'Injection',    color:'#f3e5f5'},
+  'RVV':          {unit:'Vial',   dpv:5,  form:'Oral',         color:'#e0f2f1'},
+  'PCV':          {unit:'Vial',   dpv:1,  form:'Injection',    color:'#fbe9e7'},
+  'MR':           {unit:'Vial',   dpv:10, form:'Lyophilized',  color:'#e8eaf6'},
+  'JE':           {unit:'Vial',   dpv:5,  form:'Lyophilized',  color:'#fff8e1'},
+  'DPT Booster':  {unit:'Vial',   dpv:10, form:'Injection',    color:'#e1f5fe'},
+  'TD':           {unit:'Vial',   dpv:10, form:'Injection',    color:'#f9fbe7'},
+  'Vit-A':        {unit:'Bottle', dpv:1,  form:'Oral',         color:'#fff9c4'},
+};
+const MIN_STOCK=20;
+
+let DB={stock:{},receipts:[],issues:[],reports:[],subcentres:[],activity:[]};
+VACCINES.forEach(v=>{DB.stock[v]={recv:0,issued:0,returned:0};});
+
+// Load saved data
+try{const s=localStorage.getItem(SAVE_KEY);if(s){const d=JSON.parse(s);['stock','receipts','issues','reports','subcentres','activity'].forEach(k=>{if(d[k])DB[k]=d[k];});}}catch(e){}
+
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(DB));}catch(e){}}
+setInterval(save,30000);
+
+// ══════════════════════════════════════════════
+// ROLE & NAV SYSTEM
+// ══════════════════════════════════════════════
+let ROLE=localStorage.getItem('phc_role')||null;
+let currentPage='home';
+
+const ROLE_NAVS={
+  pharmacist:[
+    {id:'home',ic:'🏠',lbl:'Home'},
+    {id:'issue',ic:'📤',lbl:'Issue'},
+    {id:'stock',ic:'📦',lbl:'Stock'},
+    {id:'sessions',ic:'📅',lbl:'Sessions'},
+    {id:'reports',ic:'📊',lbl:'Reports'},
+  ],
+  anm:[
+    {id:'home',ic:'🏠',lbl:'Home'},
+    {id:'report',ic:'📋',lbl:'Report'},
+    {id:'sessions',ic:'📅',lbl:'Sessions'},
+    {id:'reports',ic:'📊',lbl:'Data'},
+  ],
+  mo:[
+    {id:'home',ic:'🏠',lbl:'Home'},
+    {id:'stock',ic:'📦',lbl:'Stock'},
+    {id:'sessions',ic:'📅',lbl:'Sessions'},
+    {id:'reports',ic:'📊',lbl:'Reports'},
+  ],
+  bmo:[
+    {id:'home',ic:'🏠',lbl:'Home'},
+    {id:'sessions',ic:'📅',lbl:'Sessions'},
+    {id:'reports',ic:'📊',lbl:'Reports'},
+  ],
+};
+
+const ROLE_LABELS={pharmacist:'💊 Pharmacist',anm:'👩‍⚕️ ANM',mo:'👨‍⚕️ Medical Officer',bmo:'🏛️ BMO / District'};
+const ROLE_QUICK={
+  pharmacist:[
+    {ic:'📥',lbl:'Receive Vaccines',sub:'Record new stock',fn:"navTo('stock')"},
+    {ic:'📤',lbl:'Issue to SC',sub:'Before session',fn:"navTo('issue')"},
+    {ic:'📅',lbl:'Sessions',sub:'Wed & Sat plan',fn:"navTo('sessions')"},
+    {ic:'📊',lbl:'Reports',sub:'Export & print',fn:"navTo('reports')"},
+  ],
+  anm:[
+    {ic:'📋',lbl:'Send Report',sub:'After session',fn:"navTo('report')"},
+    {ic:'📅',lbl:'My Sessions',sub:'Schedule',fn:"navTo('sessions')"},
+    {ic:'📱',lbl:'WA Templates',sub:'Quick messages',fn:"openWATemplates()"},
+    {ic:'📊',lbl:'My History',sub:'Past reports',fn:"navTo('reports')"},
+  ],
+  mo:[
+    {ic:'📦',lbl:'Stock Status',sub:'PHC store',fn:"navTo('stock')"},
+    {ic:'📅',lbl:'Sessions',sub:'Wed & Sat',fn:"navTo('sessions')"},
+    {ic:'📊',lbl:'Reports',sub:'All data',fn:"navTo('reports')"},
+    {ic:'👥',lbl:'Sub Centres',sub:'ANM list',fn:"navTo('reports')"},
+  ],
+  bmo:[
+    {ic:'📊',lbl:'District Report',sub:'All PHCs',fn:"navTo('reports')"},
+    {ic:'📅',lbl:'Sessions',sub:'Schedule',fn:"navTo('sessions')"},
+    {ic:'📦',lbl:'Stock View',sub:'Vaccine levels',fn:"navTo('stock')"},
+    {ic:'💾',lbl:'Export Data',sub:'Download CSV',fn:"exportData('stock')"},
+  ],
+};
+
+function selectRole(role){
+  if(!role){
+    ROLE=null;localStorage.removeItem('phc_role');
+    document.getElementById('login-screen').classList.remove('hide');
+    return;
+  }
+  ROLE=role;localStorage.setItem('phc_role',role);
+  document.getElementById('login-screen').classList.add('hide');
+  buildNav();
+  refreshHome();
+  renderDropdowns();
+  renderStock();
+  renderSessions();
+  renderRecentReports();
+  renderRecvVax();
+  renderIssueVax();
+  renderReportVax();
+}
+
+function buildNav(){
+  const nav=document.getElementById('bottom-nav');
+  const items=ROLE_NAVS[ROLE]||ROLE_NAVS.pharmacist;
+  nav.innerHTML=items.map(it=>`
+    <button class="nav-item ${it.id===currentPage?'active':''}" onclick="navTo('${it.id}')" data-page="${it.id}">
+      <span class="nav-ic">${it.ic}</span>
+      <span class="nav-lbl">${it.lbl}</span>
+    </button>`).join('');
+  document.getElementById('role-badge').textContent=ROLE_LABELS[ROLE]?.split(' ')[1]||ROLE;
+}
+
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{n.classList.remove('active');if(n.dataset.page===page)n.classList.add('active');});
+  const pg=document.getElementById('page-'+page);
+  if(pg)pg.classList.add('active');
+  currentPage=page;
+  const titles={home:'🏠 Home',issue:'📤 Issue Vaccines',stock:'📦 Stock',sessions:'📅 Sessions',reports:'📊 Reports',report:'📋 Session Report'};
+  document.getElementById('topbar-title').textContent='PHC MP BANJARA';
+  document.getElementById('topbar-sub').textContent=titles[page]||page;
+  window.scrollTo(0,0);
+  document.getElementById('page-wrap').scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// INIT & DATES
+// ══════════════════════════════════════════════
+const TODAY=new Date();
+const TSTR=TODAY.toISOString().split('T')[0];
+const DOW=TODAY.getDay();
+const hr=TODAY.getHours();
+const greet=hr<12?'Morning':hr<17?'Afternoon':'Evening';
+document.getElementById('greeting-time').textContent=greet;
+document.getElementById('hero-date').textContent=TODAY.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+// Set dates
+['i-date','r-date','recv-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=TSTR;});
+if(DOW===3){['i-sessday','r-sessday'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='Wednesday';});}
+else if(DOW===6){['i-sessday','r-sessday'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='Saturday';});}
+
+function nextSessions(n){
+  const r=[];const d=new Date(TODAY);
+  let tries=0;
+  while(r.length<n&&tries<60){
+    if(d.getDay()===3||d.getDay()===6){
+      r.push({date:new Date(d),day:d.getDay()===3?'Wednesday':'Saturday',
+        label:d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'}),
+        isToday:d.toDateString()===TODAY.toDateString()});
+    }
+    d.setDate(d.getDate()+1);tries++;
+  }
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// HOME REFRESH
+// ══════════════════════════════════════════════
+function refreshHome(){
+  const rn=ROLE_LABELS[ROLE]||'User';
+  document.getElementById('hero-role-name').textContent=rn;
+
+  const totalStock=VACCINES.reduce((s,v)=>{const x=DB.stock[v];return s+(x.recv-x.issued+x.returned);},0);
+  document.getElementById('h-stock').textContent=totalStock;
+  document.getElementById('h-sc').textContent=DB.subcentres.length;
+  document.getElementById('h-issued').textContent=DB.issues.reduce((s,i)=>s+i.total,0);
+
+  // Session banner
+  const sb=document.getElementById('session-banner-home');
+  const isSessToday=DOW===3||DOW===6;
+  if(isSessToday){
+    sb.innerHTML=`<div class="sess-banner today"><div class="sb-icon">🎉</div><div><h3>Session Day Today!</h3><p>${DOW===3?'Wednesday':'Saturday'} immunization session — Issue vaccines now</p></div></div>`;
+  }else{
+    const nx=nextSessions(1)[0];
+    sb.innerHTML=`<div class="sess-banner upcoming"><div class="sb-icon">📅</div><div><h3>Next: ${nx.day}</h3><p>${nx.label} — Prepare stock in advance</p></div></div>`;
+  }
+
+  // Quick actions
+  const qg=document.getElementById('quick-grid');
+  const actions=ROLE_QUICK[ROLE]||ROLE_QUICK.pharmacist;
+  qg.innerHTML=actions.map(a=>`<div class="quick-btn" onclick="${a.fn}"><div class="qb-ic">${a.ic}</div><div class="qb-lbl">${a.lbl}</div><div class="qb-sub">${a.sub}</div></div>`).join('');
+
+  // Next sessions
+  const nsh=document.getElementById('next-sessions-home');
+  nsh.innerHTML=nextSessions(3).map(s=>`
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:700">${s.isToday?'💉 TODAY — ':' '}${s.day} Session</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.label} · ${DB.subcentres.filter(sc=>sc.day===s.day||sc.day==='Both').length} sub centres</div>
+      </div>
+      <span class="badge ${s.day==='Wednesday'?'bg':'bb'}">${s.day==='Wednesday'?'WED':'SAT'}</span>
+    </div>`).join('');
+
+  // Stock alerts
+  const sa=document.getElementById('stock-alerts-home');
+  const lowVax=VACCINES.filter(v=>{const x=DB.stock[v];const c=x.recv-x.issued+x.returned;return x.recv>0&&c<MIN_STOCK;});
+  sa.innerHTML=lowVax.length===0?
+    `<div class="alert alert-g">✅ All vaccine stock levels are adequate</div>`:
+    lowVax.map(v=>{const c=DB.stock[v].recv-DB.stock[v].issued+DB.stock[v].returned;
+      return `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:13px;font-weight:700">⚠️ ${v}</div><div style="font-size:11px;color:var(--muted)">Only ${c} vials remaining</div></div><span class="badge ${c===0?'br':'by'}">${c===0?'Empty':'Low'}</span></div>`;
+    }).join('');
+
+  // Render sub centre dashboard grid
+  renderSCDashGrid();
+}
+
+// ══════════════════════════════════════════════
+// SC DASHBOARD GRID
+// ══════════════════════════════════════════════
+function renderSCDashGrid(){
+  const grid=document.getElementById('sc-dashboard-grid');
+  if(!grid)return;
+  if(!DB.subcentres.length){
+    grid.innerHTML='<div class="alert alert-b">No sub centres registered yet. Add them in Reports tab.</div>';
+    return;
+  }
+  grid.innerHTML='<div class="sc-dash-grid">'+DB.subcentres.map((sc,i)=>{
+    // Get last issue to this SC
+    const lastIssues=DB.issues.filter(x=>x.sc===sc.name);
+    const lastIssue=lastIssues[lastIssues.length-1]||null;
+    const totalIssued=lastIssues.reduce((s,x)=>s+x.total,0);
+    const reports=DB.reports.filter(r=>r.sc===sc.name).length;
+    const dayClass=sc.day==='Wednesday'?'wed':sc.day==='Saturday'?'sat':'both';
+    const dayLabel=sc.day==='Wednesday'?'💚 Wednesday':'💙 Saturday';
+    const lastDate=lastIssue?lastIssue.date:'Never';
+    return `<div class="sc-dash-card ${dayClass}" onclick="openSCDetail(${i})">
+      <div class="sc-num">#${i+1}</div>
+      <div class="sc-name">${sc.name}</div>
+      <div class="sc-day">${dayLabel}</div>
+      <div class="sc-stats">
+        <span class="sc-stat-pill">📤 ${totalIssued} vials</span>
+        <span class="sc-stat-pill">📋 ${reports} reports</span>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:5px">Last: ${lastDate}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// ══════════════════════════════════════════════
+// OPEN SC DETAIL SHEET
+// ══════════════════════════════════════════════
+function openSCDetail(idx){
+  const sc=DB.subcentres[idx];
+  if(!sc)return;
+
+  // Get all issues for this SC
+  const allIssues=DB.issues.filter(x=>x.sc===sc.name).reverse();
+  const allReports=DB.reports.filter(r=>r.sc===sc.name).reverse();
+  const weekNum=getWeekNumber();
+  const weekIdx=Math.min(weekNum,4)-1;
+  const schData=MONTHLY_SCHEDULE.find(s=>s.sc===sc.name)||null;
+  const nextSess=nextSessions(4).filter(s=>s.day===sc.day||sc.day==='Both');
+  const nextOne=nextSess[0]||null;
+
+  // Calculate total vials by vaccine
+  const vialTotals={};
+  allIssues.forEach(issue=>{
+    (issue.details||[]).forEach(d=>{
+      vialTotals[d.vax]=(vialTotals[d.vax]||0)+d.doses;
+    });
+  });
+
+  // Build last issue detail
+  const lastIssue=allIssues[0]||null;
+
+  document.getElementById('sc-sheet-title').innerHTML=
+    `🏥 ${sc.name} <span style="font-size:11px;font-weight:400;color:var(--muted)">#${idx+1}</span>`;
+
+  const weeks=['1st','2nd','3rd','4th'];
+
+  document.getElementById('sc-sheet-body').innerHTML=`
+
+    <!-- SC Info Banner -->
+    <div style="background:var(--gl);border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:15px;font-weight:900;color:var(--g1)">${sc.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${sc.village||sc.name} · ${sc.day} Sessions</div>
+        </div>
+        <span class="badge ${sc.day==='Wednesday'?'bg':'bb'}">${sc.day==='Wednesday'?'WED':'SAT'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div style="background:#fff;border-radius:8px;padding:8px">
+          <div style="font-size:18px;font-weight:900;color:var(--g1)">${allIssues.reduce((s,x)=>s+x.total,0)}</div>
+          <div style="font-size:9px;color:var(--muted);font-weight:700">TOTAL VIALS</div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:8px">
+          <div style="font-size:18px;font-weight:900;color:var(--blue)">${allIssues.length}</div>
+          <div style="font-size:9px;color:var(--muted);font-weight:700">ISSUES</div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:8px">
+          <div style="font-size:18px;font-weight:900;color:var(--orange)">${allReports.length}</div>
+          <div style="font-size:9px;color:var(--muted);font-weight:700">REPORTS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANM Info -->
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;color:var(--g1);margin-bottom:8px">👩‍⚕️ ANM Details</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:700">${sc.anm||'<span style="color:var(--orange)">Not assigned yet</span>'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${sc.phone?'📞 '+sc.phone:'No phone number'}</div>
+        </div>
+        ${sc.phone?`<a href="tel:${sc.phone}" style="background:var(--g1);color:#fff;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;text-decoration:none">📞 Call</a>`:''}
+      </div>
+    </div>
+
+    <!-- Next Session & Site -->
+    ${nextOne?`<div style="background:${nextOne.isToday?'var(--gl)':'#fff'};border:${nextOne.isToday?'1.5px solid var(--g2)':'1px solid var(--border)'};border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;color:var(--g1);margin-bottom:6px">📅 ${nextOne.isToday?'TODAY — ':'Next '}${nextOne.day} Session</div>
+      <div style="font-size:13px;font-weight:700">${nextOne.label}</div>
+      ${schData?`<div style="margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--muted)">📍 Site:</span><span style="font-size:12px;font-weight:700;color:var(--g1)">${(sc.day==='Wednesday'?schData.wed:schData.sat)[weekIdx]||'—'}</span></div>`:''}
+    </div>`:''}
+
+    <!-- Monthly Schedule for this SC -->
+    ${schData?`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;color:var(--g1);margin-bottom:10px">🗓️ Monthly Session Sites</div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:800;color:var(--g2);margin-bottom:5px;text-transform:uppercase">💚 Wednesday</div>
+        ${schData.wed.map((s,i)=>s?`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5"><span style="font-size:10px;color:var(--muted);width:50px;flex-shrink:0">${weeks[i]} Wed</span><span style="font-size:12px;font-weight:700">📍 ${s}</span></div>`:'').join('')}
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--blue);margin-bottom:5px;text-transform:uppercase">💙 Saturday</div>
+        ${schData.sat.map((s,i)=>s?`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5"><span style="font-size:10px;color:var(--muted);width:50px;flex-shrink:0">${weeks[i]} Sat</span><span style="font-size:12px;font-weight:700">📍 ${s}</span></div>`:'').join('')}
+      </div>
+    </div>`:''}
+
+    <!-- Last Issue Detail -->
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;color:var(--g1);margin-bottom:10px">📤 Last Issue Detail</div>
+      ${lastIssue?`
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px">
+          <span>📅 ${lastIssue.date}</span>
+          <span class="badge ${lastIssue.sessday==='Wednesday'?'bg':'bb'}">${lastIssue.sessday}</span>
+        </div>
+        ${(lastIssue.details||[]).map(d=>`
+          <div class="sc-issue-row">
+            <div>
+              <div class="sc-issue-vax">${d.vax}</div>
+              <div style="font-size:10px;color:var(--muted)">${(VACCINE_INFO[d.vax]?.dpv||10)*d.doses} doses</div>
+            </div>
+            <div style="text-align:right">
+              <div class="sc-issue-vials">${d.doses} vials</div>
+            </div>
+          </div>`).join('')}
+        <div style="background:var(--gl);border-radius:8px;padding:8px 12px;margin-top:10px;display:flex;justify-content:space-between">
+          <span style="font-size:12px;font-weight:800;color:var(--g1)">Total</span>
+          <span style="font-size:14px;font-weight:900;color:var(--g1)">${lastIssue.total} vials</span>
+        </div>`
+      :'<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px">No issues recorded yet for this sub centre</div>'}
+    </div>
+
+    <!-- All Issue History -->
+    ${allIssues.length>1?`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;color:var(--g1);margin-bottom:10px">📋 All Issues (${allIssues.length})</div>
+      ${allIssues.map(iss=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5">
+        <div><div style="font-size:12px;font-weight:700">${iss.date}</div><div style="font-size:10px;color:var(--muted)">${iss.sessday} · Ref: ${iss.ref||'—'}</div></div>
+        <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--g1)">${iss.total} vials</div></div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <!-- Quick Issue Button -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
+      <button class="btn btn-g" onclick="quickIssueToSC(${idx});hideSheet('sc-detail-sheet')">
+        📤 Issue Vaccines to ${sc.name}
+      </button>
+      <button class="btn btn-wa" onclick="generateSCReport(${idx})">
+        📱 Generate WhatsApp Report
+      </button>
+    </div>
+  `;
+
+  showSheet('sc-detail-sheet');
+}
+
+function quickIssueToSC(idx){
+  navTo('issue');
+  setTimeout(()=>{
+    const sel=document.getElementById('i-sc');
+    if(sel){sel.value=idx;
+      // auto set session day
+      const sc=DB.subcentres[idx];
+      if(sc){
+        const dayEl=document.getElementById('i-sessday');
+        if(dayEl&&sc.day!=='Both')dayEl.value=sc.day;
+        const anmEl=document.getElementById('i-anm');
+        if(anmEl&&sc.anm)anmEl.value=sc.anm;
+      }
+    }
+  },100);
+}
+
+function generateSCReport(idx){
+  const sc=DB.subcentres[idx];
+  const lastIssue=DB.issues.filter(x=>x.sc===sc.name).reverse()[0]||null;
+  const weekNum=getWeekNumber();
+  const weekIdx=Math.min(weekNum,4)-1;
+  const schData=MONTHLY_SCHEDULE.find(s=>s.sc===sc.name)||null;
+  const site=schData?(sc.day==='Wednesday'?schData.wed[weekIdx]:schData.sat[weekIdx])||'—':'—';
+  const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  let vaxLines='',total=0;
+  if(lastIssue){
+    (lastIssue.details||[]).forEach(d=>{
+      vaxLines+=`  ${d.vax}: ${d.doses} vials (${(VACCINE_INFO[d.vax]?.dpv||10)*d.doses} doses)
+`;
+      total+=d.doses;
+    });
+  }
+
+  const noIssue = '  (No issue recorded)';
+  const lines2 = [
+    '🏥 *PHC MP BANJARA*',
+    '📤 *VACCINE ISSUE — ' + sc.name + '*',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '📍 Sub Centre: ' + sc.name,
+    '👩‍⚕️ ANM: ' + (sc.anm||'—'),
+    '📅 Session: ' + sc.day + ' (Week ' + weekNum + ')',
+    '🏡 Site: ' + site,
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '💊 VACCINES ISSUED:',
+    (vaxLines||noIssue),
+    '─────────────────────',
+    '  Total: ' + total + ' vials',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '✅ Please return unused vials after session',
+    '📞 PHC: Available',
+    '🕐 ' + now,
+    '_Medical & Health Dept_',
+    '_Bhadradri Kothagudem_'
+  ];
+  const msg = lines2.join('\n');
+
+  showWAMsg(msg);
+}
+
+// ══════════════════════════════════════════════
+// DROPDOWNS
+// ══════════════════════════════════════════════
+function renderSCFullList(){
+  const fl=document.getElementById('sc-full-list');if(!fl)return;
+  const wedCount=DB.subcentres.filter(s=>s.day==='Wednesday'||s.day==='Both').length;
+  const satCount=DB.subcentres.filter(s=>s.day==='Saturday'||s.day==='Both').length;
+  fl.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <span class="badge bg">Wed: ${wedCount}</span>
+    <span class="badge bb">Sat: ${satCount}</span>
+    <span class="badge bo">Total: ${DB.subcentres.length}</span>
+  </div>`+DB.subcentres.map((sc,i)=>`
+    <div style="background:#fafff9;border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:700">${i+1}. ${sc.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          ${sc.anm||'<span style="color:#e65100">No ANM assigned</span>'} ${sc.phone?'· '+sc.phone:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="badge ${sc.day==='Wednesday'?'bg':'bb'}">${sc.day==='Wednesday'?'WED':'SAT'}</span>
+        <span onclick="editSC(${i})" style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:700">Edit ✏️</span>
+      </div>
+    </div>`).join('');
+}
+
+function editSC(i){
+  const sc=DB.subcentres[i];
+  document.getElementById('sc-name').value=sc.name;
+  document.getElementById('sc-village').value=sc.village||'';
+  document.getElementById('sc-anm').value=sc.anm||'';
+  document.getElementById('sc-phone').value=sc.phone||'';
+  document.getElementById('sc-day').value=sc.day||'Wednesday';
+  // Store edit index
+  document.getElementById('sc-name').dataset.editIdx=i;
+  document.getElementById('sc-name').scrollIntoView({behavior:'smooth'});
+  toast('Editing: '+sc.name+' — update details and tap Save');
+}
+
+function renderDropdowns(){
+  renderSCFullList();
+  const opts=DB.subcentres.length?DB.subcentres.map((sc,i)=>`<option value="${i}">${sc.name}</option>`).join(''):'';
+  ['i-sc','r-sc'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=`<option value="">-- Select Sub Centre --</option>${opts}`;
+  });
+}
+
+// ══════════════════════════════════════════════
+// VACCINE LISTS
+// ══════════════════════════════════════════════
+function renderVaxMinis(containerId,cols){
+  const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML=VACCINES.map(v=>{
+    const avail=DB.stock[v].recv-DB.stock[v].issued+DB.stock[v].returned;
+    const inputs=cols.map(col=>`<div><input type="number" min="0" value="" placeholder="0" id="${containerId}_${col}_${v.replace(/[^a-z0-9]/gi,'_')}" ${col==='adm'&&avail===0?'disabled style="background:#f5f5f5"':''}><div class="vax-mini-lbl">${col}</div></div>`).join('');
+    return `<div class="vax-mini"><div class="vax-mini-name">${v} ${cols.includes('avail')?`<span style="font-size:10px;color:var(--muted);font-weight:400">(Stock: ${avail})</span>`:''}</div><div class="vax-mini-row">${inputs}</div></div>`;
+  }).join('');
+}
+
+function renderRecvVax(){
+  const c=document.getElementById('recv-vax-list');if(!c)return;
+  c.innerHTML=VACCINES.map(v=>`<div class="vax-mini"><div class="vax-mini-name">${v}</div><div class="vax-mini-row" style="grid-template-columns:1fr 1fr"><div><input type="number" min="0" value="" placeholder="0" id="recv_doses_${v.replace(/[^a-z0-9]/gi,'_')}"><div class="vax-mini-lbl">Vials</div></div><div><input type="text" placeholder="Batch" id="recv_batch_${v.replace(/[^a-z0-9]/gi,'_')}"><div class="vax-mini-lbl">Batch No.</div></div></div></div>`).join('');
+}
+
+function renderIssueVax(){
+  const c=document.getElementById('issue-vax-list');if(!c)return;
+  c.innerHTML=VACCINES.map(v=>{
+    const avail=DB.stock[v].recv-DB.stock[v].issued+DB.stock[v].returned;
+    return `<div class="vax-mini"><div class="vax-mini-name">${v} <span style="font-size:10px;color:${avail<MIN_STOCK?'var(--red)':'var(--g2)'}">Stock: ${avail}</span></div><div class="vax-mini-row" style="grid-template-columns:1fr"><div><input type="number" min="0" max="${avail}" value="" placeholder="0" id="issue_doses_${v.replace(/[^a-z0-9]/gi,'_')}" ${avail===0?'disabled':''}><div class="vax-mini-lbl">Vials to Issue</div></div></div></div>`;
+  }).join('');
+}
+
+function renderReportVax(){
+  const c=document.getElementById('report-vax-list');if(!c)return;
+  c.innerHTML=VACCINES.map(v=>`<div class="vax-mini"><div class="vax-mini-name">${v}</div><div class="vax-mini-row"><div><input type="number" min="0" value="" placeholder="0" id="rep_adm_${v.replace(/[^a-z0-9]/gi,'_')}"><div class="vax-mini-lbl">Adm</div></div><div><input type="number" min="0" value="" placeholder="0" id="rep_wst_${v.replace(/[^a-z0-9]/gi,'_')}"><div class="vax-mini-lbl">Waste</div></div><div><input type="number" min="0" value="" placeholder="0" id="rep_ret_${v.replace(/[^a-z0-9]/gi,'_')}"><div class="vax-mini-lbl">Return</div></div></div></div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// RECEIVE
+// ══════════════════════════════════════════════
+function saveReceive(){
+  const date=document.getElementById('recv-date').value||TSTR;
+  const from=document.getElementById('recv-from').value||'District';
+  let total=0,list=[];
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const doses=parseInt(document.getElementById('recv_doses_'+k)?.value)||0;
+    if(doses>0){DB.stock[v].recv+=doses;total+=doses;list.push(v+'('+doses+')');}
+  });
+  if(!total){toast('Enter at least one vaccine quantity');return;}
+  DB.receipts.push({date,from,total,list:list.join(', ')});
+  DB.activity.unshift({t:'recv',ic:'📥',title:'Received '+total+' vials',sub:'From '+from+' — '+date});
+  save();renderStock();renderIssueVax();refreshHome();
+  toast('✅ '+total+' vials received & stock updated!');
+}
+
+// ══════════════════════════════════════════════
+// ISSUE
+// ══════════════════════════════════════════════
+function saveIssue(){
+  const date=document.getElementById('i-date').value||TSTR;
+  const scIdx=document.getElementById('i-sc').value;
+  const sc=scIdx!==''?DB.subcentres[scIdx]?.name||'':'';
+  const sessday=document.getElementById('i-sessday').value;
+  const anm=document.getElementById('i-anm').value||'—';
+  if(!sc){toast('Select a sub centre');return;}
+  let total=0,details=[];
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const doses=parseInt(document.getElementById('issue_doses_'+k)?.value)||0;
+    if(doses>0){
+      const avail=DB.stock[v].recv-DB.stock[v].issued+DB.stock[v].returned;
+      if(doses>avail){toast('❌ '+v+': Only '+avail+' available');return;}
+      DB.stock[v].issued+=doses;total+=doses;details.push({vax:v,doses});
+    }
+  });
+  if(!total){toast('Enter vials to issue');return;}
+  const ref='ISS-'+date.replace(/-/g,'')+'-'+Math.floor(Math.random()*900+100);
+  DB.issues.push({date,sc,sessday,anm,ref,details,total});
+  DB.activity.unshift({t:'issue',ic:'📤',title:'Issued to '+sc,sub:total+' vials — '+sessday+' — '+date});
+  save();renderIssueVax();refreshHome();
+  toast('✅ '+total+' vials issued to '+sc+'!');
+}
+
+function generateIssueMsg(){
+  const scIdx=document.getElementById('i-sc').value;
+  const sc=scIdx!==''?DB.subcentres[scIdx]?.name||'—':'—';
+  const date=document.getElementById('i-date').value||TSTR;
+  const sessday=document.getElementById('i-sessday').value;
+  const anm=document.getElementById('i-anm').value||'—';
+  let lines='',total=0;
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const doses=parseInt(document.getElementById('issue_doses_'+k)?.value)||0;
+    if(doses>0){lines+=`  ${v}: ${doses} vials (${doses*(VACCINE_INFO[v]?.dpv||10)} doses)\n`;total+=doses;}
+  });
+  const msg=`🏥 *PHC MP BANJARA*
+📤 *VACCINE ISSUE SLIP*
+━━━━━━━━━━━━━━━━━━━
+📍 Sub Centre: ${sc}
+👩‍⚕️ ANM: ${anm}
+📅 Date: ${date}
+💉 Session: ${sessday}
+━━━━━━━━━━━━━━━━━━━
+💊 Vaccines Issued (Vials):
+${lines||'  None entered\n'}─────────────────
+  Total: ${total} vials
+━━━━━━━━━━━━━━━━━━━
+✅ Please return unused doses after session
+_PHC Banjara | Med & Health Dept_`;
+  showWAMsg(msg);
+}
+
+function clearIssue(){document.getElementById('i-anm').value='';renderIssueVax();}
+
+// ══════════════════════════════════════════════
+// SESSION REPORT (ANM)
+// ══════════════════════════════════════════════
+function saveReport(){
+  const scIdx=document.getElementById('r-sc').value;
+  const sc=scIdx!==''?DB.subcentres[scIdx]?.name||'—':'—';
+  const date=document.getElementById('r-date').value||TSTR;
+  const sessday=document.getElementById('r-sessday').value;
+  const anm=document.getElementById('r-anm').value||'—';
+  const site=document.getElementById('r-site').value||'—';
+  const bene=document.getElementById('r-bene').value||'0';
+  const cold=document.getElementById('r-cold').value;
+  const aefi=document.getElementById('r-aefi').value;
+  const remarks=document.getElementById('r-remarks').value||'None';
+  let totalAdm=0,details=[];
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const adm=parseInt(document.getElementById('rep_adm_'+k)?.value)||0;
+    const wst=parseInt(document.getElementById('rep_wst_'+k)?.value)||0;
+    const ret=parseInt(document.getElementById('rep_ret_'+k)?.value)||0;
+    if(adm>0||wst>0||ret>0){
+      DB.stock[v].returned+=ret;totalAdm+=adm;
+      details.push({vax:v,adm,wst,ret});
+    }
+  });
+  DB.reports.push({date,sc,sessday,anm,site,bene,cold,aefi,remarks,details,totalAdm,savedAt:new Date().toISOString()});
+  DB.activity.unshift({t:'report',ic:'📋',title:'Report from '+sc,sub:totalAdm+' doses — '+sessday+' — '+date});
+  save();renderRecentReports();refreshHome();
+  toast('✅ Report saved!');
+}
+
+function generateWAReport(){
+  const scIdx=document.getElementById('r-sc').value;
+  const sc=scIdx!==''?DB.subcentres[scIdx]?.name||'—':'—';
+  const date=document.getElementById('r-date').value||TSTR;
+  const sessday=document.getElementById('r-sessday').value;
+  const anm=document.getElementById('r-anm').value||'—';
+  const site=document.getElementById('r-site').value||'—';
+  const bene=document.getElementById('r-bene').value||'0';
+  const drop=document.getElementById('r-drop').value||'0';
+  const cold=document.getElementById('r-cold').value;
+  const aefi=document.getElementById('r-aefi').value;
+  const remarks=document.getElementById('r-remarks').value||'None';
+  let vaxLines='',totalAdm=0,totalWst=0,totalRet=0;
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const adm=parseInt(document.getElementById('rep_adm_'+k)?.value)||0;
+    const wst=parseInt(document.getElementById('rep_wst_'+k)?.value)||0;
+    const ret=parseInt(document.getElementById('rep_ret_'+k)?.value)||0;
+    if(adm>0||wst>0||ret>0){vaxLines+=`  ${v}: Adm ${adm} | Wst ${wst} | Ret ${ret}\n`;totalAdm+=adm;totalWst+=wst;totalRet+=ret;}
+  });
+  const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const msg=`🏥 *PHC MP BANJARA*
+📋 *VACCINE SESSION REPORT*
+━━━━━━━━━━━━━━━━━━━━━
+📍 Sub Centre: ${sc}
+👩‍⚕️ ANM: ${anm}
+📅 Date: ${date}
+💉 Session: ${sessday}
+🏡 Site: ${site}
+━━━━━━━━━━━━━━━━━━━━━
+💊 VACCINE DETAILS:
+${vaxLines||'  (No vaccines entered)'}─────────────────────
+  Total Administered: ${totalAdm}
+  Total Wastage: ${totalWst}
+  Total Returned: ${totalRet}
+━━━━━━━━━━━━━━━━━━━━━
+👶 Beneficiaries: ${bene}
+❌ Drop Outs: ${drop}
+🌡️ Cold Chain: ${cold}
+⚠️ AEFI: ${aefi}
+📝 Remarks: ${remarks}
+━━━━━━━━━━━━━━━━━━━━━
+🕐 Time: ${now}
+_Medical & Health Dept_
+_Bhadradri Kothagudem_`;
+  showWAMsg(msg);
+  saveReport();
+}
+
+function clearReport(){
+  ['r-anm','r-site','r-remarks','r-bene','r-drop'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  renderReportVax();
+}
+
+// ══════════════════════════════════════════════
+// STOCK
+// ══════════════════════════════════════════════
+function renderStock(){
+  const tb=document.getElementById('stock-body');if(!tb)return;
+  tb.innerHTML=VACCINES.map(v=>{
+    const s=DB.stock[v];const c=s.recv-s.issued+s.returned;
+    const st=c===0?'<span class="badge br">Empty</span>':c<MIN_STOCK?'<span class="badge by">Low</span>':'<span class="badge bg">OK</span>';
+    return `<tr><td><strong>${v}</strong></td><td class="mono">${s.recv}</td><td class="mono">${s.issued}</td><td class="mono ${c===0?'danger':c<MIN_STOCK?'warn':'ok'}">${c}</td><td>${st}</td></tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// SUB CENTRES
+// ══════════════════════════════════════════════
+function saveSC(){
+  const nameEl=document.getElementById('sc-name');
+  const name=nameEl.value;
+  const anm=document.getElementById('sc-anm').value;
+  if(!name){toast('Enter sub centre name');return;}
+  const editIdx=nameEl.dataset.editIdx!==undefined&&nameEl.dataset.editIdx!==''?parseInt(nameEl.dataset.editIdx):-1;
+  const entry={name,village:document.getElementById('sc-village').value,anm,phone:document.getElementById('sc-phone').value,day:document.getElementById('sc-day').value};
+  if(editIdx>=0){
+    DB.subcentres[editIdx]=entry;
+    delete nameEl.dataset.editIdx;
+    toast('✅ '+name+' updated!');
+  } else {
+    DB.subcentres.push(entry);
+    toast('✅ Sub centre added!');
+  }
+  save();renderDropdowns();renderSessions();refreshHome();
+  ['sc-name','sc-village','sc-anm','sc-phone'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ══════════════════════════════════════════════
+// SESSIONS
+// ══════════════════════════════════════════════
+function getWeekNumber(){
+  // Return which week of month today is (1-4)
+  return Math.ceil(TODAY.getDate()/7);
+}
+
+function renderSessions(){
+  // Populate SC schedule select
+  const sel=document.getElementById('sc-schedule-select');
+  if(sel){
+    sel.innerHTML='<option value="">-- Select Sub Centre --</option>'+
+      MONTHLY_SCHEDULE.map((s,i)=>`<option value="${i}">${s.sc}</option>`).join('');
+  }
+  renderThisWeek();
+  showWeekNum(getWeekNumber(),null);
+}
+
+function renderThisWeek(){
+  const sl=document.getElementById('sessions-list');if(!sl)return;
+  const weekNum=getWeekNumber();
+  const weekIdx=Math.min(weekNum,4)-1; // 0-3
+
+  // Build next 2 sessions (next Wed + next Sat)
+  const upcoming=nextSessions(6);
+  sl.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Month Week '+weekNum+' — Session Sites</div>'+
+  upcoming.slice(0,4).map(s=>{
+    const dayKey=s.day==='Wednesday'?'wed':'sat';
+    const sites=MONTHLY_SCHEDULE.map(sc=>({sc:sc.sc,site:sc[dayKey][weekIdx]||''})).filter(x=>x.site);
+    return `<div style="background:${s.isToday?'var(--gl)':'#fff'};border:${s.isToday?'1.5px solid var(--g2)':'1px solid var(--border)'};border-radius:14px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:14px;font-weight:800">${s.isToday?'🎉 TODAY — ':'📅 '}${s.day}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.label}</div>
+        </div>
+        <span class="badge ${s.day==='Wednesday'?'bg':'bb'}">${s.day==='Wednesday'?'WED':'SAT'}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        ${sites.map(x=>`<div class="site-card"><span style="font-weight:700;font-size:12px">🏥 ${x.sc}</span><span style="float:right;font-size:11px;color:var(--g2)">📍 ${x.site}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showWeek(view,el){
+  document.querySelectorAll('.week-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  ['week','monthly','sc'].forEach(v=>{ const d=document.getElementById('view-'+v); if(d)d.style.display=v===view?'block':'none'; });
+  if(view==='monthly')showWeekNum(getWeekNumber(),null);
+}
+
+function showWeekNum(wk,el){
+  document.querySelectorAll('.week-num-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  else{ const tabs=document.querySelectorAll('.week-num-tab'); if(tabs[wk-1])tabs[wk-1].classList.add('active'); }
+  const idx=Math.min(wk,4)-1;
+  const mc=document.getElementById('monthly-content');if(!mc)return;
+  mc.innerHTML=`
+    <div style="margin-bottom:12px">
+      <div class="site-day-header">💉 Wednesday Sessions — Week ${wk}</div>
+      ${MONTHLY_SCHEDULE.map(sc=>sc.wed[idx]?`<div class="site-card"><div style="font-weight:700;font-size:12px">🏥 ${sc.sc}</div><div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${sc.wed[idx]}</div></div>`:'').join('')}
+    </div>
+    <div>
+      <div class="site-day-header">💉 Saturday Sessions — Week ${wk}</div>
+      ${MONTHLY_SCHEDULE.map(sc=>sc.sat[idx]?`<div class="site-card"><div style="font-weight:700;font-size:12px">🏥 ${sc.sc}</div><div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${sc.sat[idx]}</div></div>`:'').join('')}
+    </div>`;
+}
+
+function showSCSchedule(idx){
+  const detail=document.getElementById('sc-schedule-detail');if(!detail)return;
+  if(idx===''){detail.innerHTML='';return;}
+  const sc=MONTHLY_SCHEDULE[idx];
+  const weeks=['1st','2nd','3rd','4th'];
+  detail.innerHTML=`
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🏥 ${sc.sc} — Full Schedule</div>
+      <div class="site-day-header">💉 Wednesday Sessions</div>
+      ${sc.wed.map((site,i)=>site?`<div class="site-card"><span style="font-weight:800;font-size:11px;color:var(--muted)">${weeks[i]} Wed</span><div style="font-size:13px;font-weight:700;margin-top:2px">📍 ${site}</div></div>`:'').join('')}
+      <div class="site-day-header" style="margin-top:12px">💉 Saturday Sessions</div>
+      ${sc.sat.map((site,i)=>site?`<div class="site-card"><span style="font-weight:800;font-size:11px;color:var(--muted)">${weeks[i]} Sat</span><div style="font-size:13px;font-weight:700;margin-top:2px">📍 ${site}</div></div>`:'').join('')}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+// REPORTS / HISTORY
+// ══════════════════════════════════════════════
+function renderRecentReports(){
+  const rr=document.getElementById('recent-reports');if(!rr)return;
+  if(!DB.reports.length){rr.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">No reports saved yet</div>';return;}
+  rr.innerHTML=DB.reports.slice().reverse().slice(0,10).map((r,i)=>`
+    <div class="hist-item">
+      <h4>💉 ${r.sc} — ${r.sessday}</h4>
+      <p>📅 ${r.date} | 👩‍⚕️ ${r.anm} | 💊 ${r.totalAdm} doses | 👶 ${r.bene}</p>
+      <div class="hist-foot">
+        <span class="badge ${r.sessday==='Wednesday'?'bg':'bb'}">${r.sessday}</span>
+        <span class="badge ${r.aefi==='No AEFI'?'bg':'br'}">${r.aefi}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// EXPORT / BACKUP
+// ══════════════════════════════════════════════
+function exportData(type){
+  let csv='',filename='';
+  if(type==='stock'){
+    csv='Vaccine,Received,Issued,Returned,Current Stock\n';
+    VACCINES.forEach(v=>{const s=DB.stock[v];csv+=`"${v}",${s.recv},${s.issued},${s.returned},${s.recv-s.issued+s.returned}\n`;});
+    filename='PHC_Banjara_Stock_'+TSTR+'.csv';
+  }else if(type==='issue'){
+    csv='Date,Sub Centre,Session,ANM,Total Doses\n';
+    DB.issues.forEach(i=>csv+=`"${i.date}","${i.sc}","${i.sessday}","${i.anm}",${i.total}\n`);
+    filename='PHC_Banjara_Issues_'+TSTR+'.csv';
+  }else if(type==='report'){
+    csv='Date,Sub Centre,Session,ANM,Administered,Beneficiaries,AEFI\n';
+    DB.reports.forEach(r=>csv+=`"${r.date}","${r.sc}","${r.sessday}","${r.anm}",${r.totalAdm},"${r.bene}","${r.aefi}"\n`);
+    filename='PHC_Banjara_Reports_'+TSTR+'.csv';
+  }
+  if(!csv){toast('No data to export');return;}
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);toast('✅ Downloaded: '+filename);
+}
+
+function backupData(){
+  const b={...DB,_v:1,_date:new Date().toISOString(),_facility:'PHC MP BANJARA'};
+  const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='PHC_Banjara_Backup_'+TSTR+'.json';a.click();
+  URL.revokeObjectURL(url);toast('✅ Backup downloaded!');
+}
+
+function restoreData(){
+  const input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(confirm('Replace all current data with backup?')){
+          ['stock','receipts','issues','reports','subcentres','activity'].forEach(k=>{if(d[k])DB[k]=d[k];});
+          save();location.reload();
+        }
+      }catch(err){toast('Invalid backup file');}
+    };reader.readAsText(file);
+  };input.click();
+}
+
+function clearAllData(){
+  if(confirm('Delete ALL data? This cannot be undone!')){
+    if(confirm('Are you sure?')){localStorage.removeItem(SAVE_KEY);location.reload();}
+  }
+}
+
+// ══════════════════════════════════════════════
+// WHATSAPP
+// ══════════════════════════════════════════════
+let _waMsg='';
+function showWAMsg(msg){_waMsg=msg;document.getElementById('wa-msg-box').textContent=msg;showSheet('wa-sheet');}
+function sendViaWhatsApp(){if(_waMsg)window.open('https://wa.me/?text='+encodeURIComponent(_waMsg),'_blank');}
+function copyWAMsg(){if(navigator.clipboard)navigator.clipboard.writeText(_waMsg);else{const t=document.createElement('textarea');t.value=_waMsg;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);}toast('✅ Copied! Paste in WhatsApp');}
+function openWATemplates(){navTo('report');}
+
+// ══════════════════════════════════════════════
+// SHEETS & UI
+// ══════════════════════════════════════════════
+function showSheet(id){document.getElementById(id).classList.add('open');}
+function hideSheet(id){document.getElementById(id).classList.remove('open');}
+
+// Close sheet on overlay click
+document.querySelectorAll('.sheet-ov').forEach(ov=>{ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('open');});});
+
+function goBack(){navTo('home');}
+function showNotifications(){toast('💉 Next session: '+nextSessions(1)[0].label);}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════════════
+// PWA INSTALL
+// ══════════════════════════════════════════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-banner').classList.add('show');
+});
+document.getElementById('install-btn')?.addEventListener('click',()=>{
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').classList.remove('show');});}
+});
+window.addEventListener('appinstalled',()=>{document.getElementById('install-banner').classList.remove('show');toast('✅ App installed successfully!');});
+
+// ══════════════════════════════════════════════
+// SERVICE WORKER
+// ══════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});
+}
+
+// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// PRE-LOAD 13 SUB CENTRES (PHC MP BANJARA)
+// ══════════════════════════════════════════════
+const MONTHLY_SCHEDULE = [
+  {
+    sc: 'Anjanapuram',
+    wed: ['SC Anjanapuram', 'AWC Anjanapuram-1', 'AWC Anjanapuram-2', 'Anjanapuram SC'],
+    sat: ['Sompalli', '', 'G.G. Palli', 'Buddagudem']
+  },
+  {
+    sc: 'MP Banjara',
+    wed: ['SC Colony-1 AWC-1', 'Bestabazar MPB', 'SC Colony-1 AWC-1', 'Bestabazar MPB'],
+    sat: ['Temple Area', 'KCR Colony', '', 'Jinkalagudem']
+  },
+  {
+    sc: 'Laxmipuram',
+    wed: ['Laxmipuram SC', 'Laxmipuram-2', 'Laxmipuram SC', 'Marrikunta'],
+    sat: ['Vepalagadda Laxmi', 'Polavaram Laxmi', 'Laxmipuram-3', '']
+  },
+  {
+    sc: 'Tekulachervu',
+    wed: ['Tekulachervu', 'Yeddulachervu', 'Tekulachervu', 'Gopalapuram'],
+    sat: ['Nakiripeta', 'Woodyard Colony', '', 'Kothuruthanda']
+  },
+  {
+    sc: 'Krishna Sagar',
+    wed: ['Devaiah Gumpu', 'SC Colony KSR', 'Singaram', 'S. Ramapuram'],
+    sat: ['Musalama llugo', 'ST Colony & Urladosapadu KSR', 'Bathulanagar', '']
+  },
+  {
+    sc: 'Gandhi Nagar',
+    wed: ['AWC Vijayanagaram Gnd', 'Gandhinagar SC', 'AWC Gandhinagar-2', 'Bhaskarnagar'],
+    sat: ['Srirampur am Gnd', 'Rajeevnagar Gnd', 'Odiyacamp Gnd', '']
+  },
+  {
+    sc: 'SR Palem',
+    wed: ['SR Palem', 'Reddypalem-2', 'SC Gowtapuram SRP', 'Gowthapuram School Area'],
+    sat: ['SC Colony Gowthapuram SRP', 'School Area Gowthapuram SRP', 'Reddypalem-2', '']
+  },
+  {
+    sc: 'Burgampadu-1',
+    wed: ['Ramalayam SC BPD-1', 'Ramalayam SC BPD-1', 'Ramalayam SC BPD-1', ''],
+    sat: ['AWC SC Colony-1 BPD-1', 'SC Colony-2 BPD-1', 'AWC SC Colony-1 BPD-1', 'AWC SC Colony-2 BPD-1']
+  },
+  {
+    sc: 'Burgampadu-2',
+    wed: ['BPD-2 SC', 'Rice Mill Area', 'Mudiraj Bazar', 'Burgampadu-II SC'],
+    sat: ['Old Sarapaka', 'Old Sarapaka', 'Old Sarapaka', '']
+  },
+  {
+    sc: 'NN Prolu',
+    wed: ['NNProlu SC Colony', 'Gommuru', 'SC Colony-1', 'NN Prolu SC'],
+    sat: ['ST Colony', 'NNP Sub-Centre', 'BC Colony NNP', '']
+  },
+  {
+    sc: 'Sarapaka',
+    wed: ['Sundaraiah Nagar', 'Conductors Colony', 'Sub-Centre', 'Conductors Colony'],
+    sat: ['Basappa Camp', 'Masjid Area', 'G.P.O Area', '']
+  },
+  {
+    sc: 'Muthyalampeta',
+    wed: ['Mutyalampeta SC', 'Mutyalampeta SC', 'East Gate', ''],
+    sat: ['East Gate', 'Ricksha Colony', 'Mede Colony', 'Pragathi Area']
+  },
+  {
+    sc: 'Iravendi',
+    wed: ['Koyagudem', 'Iravendi SC', 'Iravendi SC', 'Thallagommuru'],
+    sat: ['Chintakunta & Laxmaiah Gumpu', 'Mothe', 'Godaramma Colony', '']
+  }
+];
+
+const DEFAULT_SUBCENTRES = [
+  {name:'Anjanapuram',       village:'Anjanapuram',     anm:'',phone:'',day:'Wednesday'},
+  {name:'MP Banjara',        village:'MP Banjara',      anm:'',phone:'',day:'Wednesday'},
+  {name:'Burgampadu-1',      village:'Burgampadu',      anm:'',phone:'',day:'Wednesday'},
+  {name:'Burgampadu-2',      village:'Burgampadu',      anm:'',phone:'',day:'Saturday'},
+  {name:'SR Palem',          village:'SR Palem',        anm:'',phone:'',day:'Saturday'},
+  {name:'Sarapaka',          village:'Sarapaka',        anm:'',phone:'',day:'Wednesday'},
+  {name:'Iravendi',          village:'Iravendi',        anm:'',phone:'',day:'Saturday'},
+  {name:'Gandhi Nagar',      village:'Gandhi Nagar',    anm:'',phone:'',day:'Wednesday'},
+  {name:'Krishna Sagar',     village:'Krishna Sagar',   anm:'',phone:'',day:'Saturday'},
+  {name:'Laxmipuram',        village:'Laxmipuram',      anm:'',phone:'',day:'Wednesday'},
+  {name:'Tekulachervu',      village:'Tekulachervu',    anm:'',phone:'',day:'Saturday'},
+  {name:'Muthyalampeta',     village:'Muthyalampeta',   anm:'',phone:'',day:'Wednesday'},
+  {name:'NN Prolu',          village:'NN Prolu',        anm:'',phone:'',day:'Saturday'},
+];
+
+// Only pre-load if no sub centres saved yet
+if(DB.subcentres.length === 0){
+  DB.subcentres = DEFAULT_SUBCENTRES;
+  save();
+}
+
+// ══════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════
+setTimeout(()=>{
+  document.getElementById('splash').classList.add('hide');
+  if(ROLE){
+    document.getElementById('login-screen').classList.add('hide');
+    selectRole(ROLE);
+  }
+},2000);
+</script>
+</body>
+</html>
