@@ -434,10 +434,21 @@ function saveDue(){
       d.sessions[ei].data[v].ret=ret; // auto-calculated return
     });
   } else {
+    // No existing session — create new but check Firebase for any PO data
     const data={};
     VACCINES.forEach(v=>{
       const adm=admData[v]||0;
-      data[v]={due:dueData[v]||0,iss:0,adm,wst:0,ret:0,disc:0};
+      // Keep any PO data already in DB from Firebase sync
+      const existInDB=(DB[sc.name]?.sessions||[]).find(s=>s.date===TSTR);
+      const existV=existInDB?existInDB.data[v]||{}:{};
+      data[v]={
+        due:dueData[v]||0,
+        iss:existV.iss||0,      // preserve PO issued
+        adm,
+        wst:existV.wst||0,     // preserve PO wasted
+        ret:existV.ret||0,
+        disc:existV.disc||0
+      };
     });
     d.sessions.push({date:TSTR,day,week:wk,data,at:new Date().toISOString()});
   }
