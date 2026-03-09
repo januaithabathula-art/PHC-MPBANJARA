@@ -322,13 +322,12 @@ function initFirebase(){
     });
 
     // Step 2: Listen for changes to individual SCs
-    firebaseDB.ref('phc_data').on('child_changed', snap=>{
+    function handleSCChange(snap){
       const scName=snap.key;
       const data=snap.val();
       if(data){ DB[scName]=data; }
       try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
       showSyncStatus('🟢 Synced');
-      // Refresh view if currently showing this SC
       const scScreen=document.getElementById('s-sc');
       if(scScreen.classList.contains('active') && SC_LIST[CUR] && SC_LIST[CUR].name===scName){
         buildRegister();
@@ -336,7 +335,9 @@ function initFirebase(){
         buildDash();
       }
       checkAlerts();
-    });
+    }
+    firebaseDB.ref('phc_data').on('child_changed', handleSCChange);
+    firebaseDB.ref('phc_data').on('child_added', handleSCChange);
 
     // Step 3: Watch connection state
     firebaseDB.ref('.info/connected').on('value', snap=>{
