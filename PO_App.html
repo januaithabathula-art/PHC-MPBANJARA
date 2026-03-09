@@ -310,6 +310,8 @@ function initFirebase(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
+    firebaseReady=true; // Set ready immediately
+    dbg("firebaseReady=true");
 
     // Step 1: Load full DB once on startup
     dbg('📡 Connecting...');
