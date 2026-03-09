@@ -120,14 +120,8 @@ table.rpt tfoot td.sc-name{background:#3a0000;color:#fff;font-family:'DM Sans',s
 .mon-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;outline:none}
 .wa-btn{background:#25d366;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
 </style>
-
-<style>
-#dbg{position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;
-font-family:monospace;padding:4px 8px;z-index:99999;max-height:80px;overflow-y:auto;
-border-top:2px solid #0f0}
-</style>
 </head>
-<body><div id="dbg">DEBUG: loading...</div>
+<body>
 
 <!-- HOME -->
 <div class="screen active" id="s-home">
@@ -311,10 +305,8 @@ function initFirebase(){
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
     firebaseReady=true; // Set ready immediately
-    dbg("firebaseReady=true");
 
     // Step 1: Load full DB once on startup
-    dbg('📡 Connecting...');
     firebaseDB.ref('phc_data').once('value', snap=>{
       const data=snap.val();
       if(data){
@@ -331,7 +323,6 @@ function initFirebase(){
 
     // Step 2: Listen for changes to individual SCs
     firebaseDB.ref('phc_data').on('child_changed', snap=>{
-      dbg('🔄 child_changed: '+snap.key);
       const scName=snap.key;
       const data=snap.val();
       if(data){ DB[scName]=data; }
@@ -380,10 +371,6 @@ function showSyncStatus(msg){
   try{localStorage.setItem('phc_migrated_v3','1');}catch(e){}
 })();
 
-function dbg(msg){
-  const d=document.getElementById('dbg');
-  if(d){const t=new Date().toLocaleTimeString();d.innerHTML='['+t+'] '+msg+'<br>'+d.innerHTML;}
-}
 
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -391,7 +378,6 @@ function save(){
     const curSC=CUR!=null?SC_LIST[CUR]:null;
     if(curSC&&DB[curSC.name]){
       // Write just this SC's data to Firebase
-      dbg('💾 Writing: phc_data/'+curSC.name);
       firebaseDB.ref('phc_data/'+curSC.name).set(DB[curSC.name])
         .then(()=>{showSyncStatus('🟢 Synced');dbg('✅ Write OK');})
         .catch(e=>{showSyncStatus('🔴 '+e.code);dbg('❌ ERROR: '+e.code)});

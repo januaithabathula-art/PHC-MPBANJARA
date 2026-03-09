@@ -93,14 +93,8 @@ table.reg tr:nth-child(even) td:first-child{background:#f5f7ff}
 .wk-badge{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .site-chip{display:inline-block;background:var(--bl);color:var(--b1);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin:1px}
 </style>
-
-<style>
-#dbg{position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;
-font-family:monospace;padding:4px 8px;z-index:99999;max-height:80px;overflow-y:auto;
-border-top:2px solid #0f0}
-</style>
 </head>
-<body><div id="dbg">DEBUG: loading...</div>
+<body>
 
 <!-- HOME -->
 <div class="screen active" id="s-home">
@@ -246,10 +240,8 @@ function initFirebase(){
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
     firebaseReady=true; // Set ready immediately
-    dbg("firebaseReady=true");
 
     // Step 1: Load full DB once on startup
-    dbg('📡 Connecting to Firebase...');
     firebaseDB.ref('phc_data').once('value', snap=>{
       const data=snap.val();
       if(data){
@@ -265,7 +257,6 @@ function initFirebase(){
 
     // Step 2: Listen for changes to individual SCs (child_changed fires per SC)
     firebaseDB.ref('phc_data').on('child_changed', snap=>{
-      dbg('🔄 child_changed: '+snap.key);
       const scName=snap.key;
       const data=snap.val();
       if(data){ DB[scName]=data; }
@@ -304,10 +295,6 @@ function showSyncStatus(msg){
   el.textContent=msg;
 }
 
-function dbg(msg){
-  const d=document.getElementById('dbg');
-  if(d){const t=new Date().toLocaleTimeString();d.innerHTML='['+t+'] '+msg+'<br>'+d.innerHTML;}
-}
 
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -315,7 +302,6 @@ function save(){
     const curSC=CUR!=null?SC_LIST[CUR]:null;
     if(curSC&&DB[curSC.name]){
       // Write just this SC's data to Firebase
-      dbg('💾 Writing to Firebase: phc_data/'+curSC.name);
       firebaseDB.ref('phc_data/'+curSC.name).set(DB[curSC.name])
         .then(()=>{showSyncStatus('🟢 Synced');dbg('✅ Write SUCCESS');})
         .catch(e=>{showSyncStatus('🔴 '+e.code);dbg('❌ Write ERROR: '+e.code)});
