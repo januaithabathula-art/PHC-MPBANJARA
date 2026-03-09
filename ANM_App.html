@@ -256,21 +256,24 @@ function initFirebase(){
     });
 
     // Step 2: Listen for ANY changes to individual SCs
-    function handleSCChange(snap){
-      const scName=snap.key;
+    // Listen for any change to full DB
+    firebaseDB.ref('phc_data').on('value', snap=>{
       const data=snap.val();
-      if(data){ DB[scName]=data; }
-      try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      if(data){
+        // Merge: only update SCs that exist in Firebase
+        Object.keys(data).forEach(scName=>{ DB[scName]=data[scName]; });
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
       showSyncStatus('🟢 Synced');
       const scScreen=document.getElementById('s-sc');
-      if(scScreen.classList.contains('active') && SC_LIST[CUR] && SC_LIST[CUR].name===scName){
+      if(scScreen.classList.contains('active') && SC_LIST[CUR]){
         buildDueForm();
+        toast('🔄 Updated from Firebase');
       } else {
         buildDash();
+        toast('🔄 Firebase sync received');
       }
-    }
-    firebaseDB.ref('phc_data').on('child_changed', handleSCChange);
-    firebaseDB.ref('phc_data').on('child_added', handleSCChange);
+    });
 
     // Step 3: Watch connection state
     firebaseDB.ref('.info/connected').on('value', snap=>{
