@@ -1,5 +1,5 @@
-// PHC Banjara Service Worker - v3 (cache busted)
-const CACHE = 'phc-banjara-v3';
+// PHC Banjara Service Worker - v4
+const CACHE = 'phc-banjara-v4';
 
 // On install - don't pre-cache, just activate immediately
 self.addEventListener('install', e => {
