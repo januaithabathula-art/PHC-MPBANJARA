@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PO v10 — PHC MP Banjara</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="theme-color" content="#6a0000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PO PHC">
+<link rel="manifest" href="manifest-po.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --r1:#6a0000;--r2:#b71c1c;--rl:#fff5f5;--rb:#ffb0b0;
+  --g1:#0a2a14;--g2:#1a5c2a;--g3:#2e7d32;--gl:#e8f5e9;--gb:#a5d6a7;
+  --b2:#1a4fd6;--bl:#e8eeff;
+  --text:#1a1a2e;--muted:#7a8599;--border:#e0e0e0;--card:#fff;
+  --safe:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#fff8f8;color:var(--text);min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+.topbar{background:var(--r1);color:#fff;padding:14px 16px calc(14px + var(--safe)) 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.tb-back{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-info{flex:1;min-width:0}
+.tb-title{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sub{font-size:10px;opacity:.7;margin-top:1px}
+.body{flex:1;padding:14px 14px calc(24px + var(--safe));overflow-y:auto}
+.hero{background:linear-gradient(135deg,#4a0000 0%,var(--r2) 100%);border-radius:18px;padding:18px;color:#fff;margin-bottom:14px}
+.hero-name{font-size:20px;font-weight:900;letter-spacing:-.3px}
+.hero-sub{font-size:11px;opacity:.7;margin-top:3px;margin-bottom:14px}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hg{background:rgba(255,255,255,.12);border-radius:12px;padding:10px 8px;text-align:center}
+.hg .n{font-size:22px;font-weight:900}
+.hg .l{font-size:9px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 0 8px}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc-card{background:var(--card);border-radius:14px;padding:13px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s}
+.sc-card:active{transform:scale(.97)}
+.sc-card.wed{border-left:4px solid var(--g3)}
+.sc-card.sat{border-left:4px solid var(--b2)}
+.sname{font-size:13px;font-weight:800;margin-bottom:2px}
+.sday{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.sc-card.wed .sday{color:var(--g3)}
+.sc-card.sat .sday{color:var(--b2)}
+.due-badge{display:inline-block;background:var(--bl);color:var(--b2);border-radius:6px;padding:2px 7px;font-size:9px;font-weight:800;margin-top:6px}
+.iss-badge{display:inline-block;background:var(--rl);color:var(--r2);border-radius:6px;padding:2px 7px;font-size:9px;font-weight:800;margin-top:4px}
+/* Register */
+.sess-bar{background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sess-bar label{font-size:11px;font-weight:700;color:var(--muted)}
+.sess-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;-webkit-appearance:none}
+.site-lbl{font-size:11px;font-weight:700;color:var(--r2);flex:1;text-align:right}
+.reg-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+table.reg{width:100%;border-collapse:collapse;min-width:520px}
+table.reg th{padding:8px 7px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;color:#fff;text-align:center}
+table.reg td{padding:7px 6px;border-bottom:1px solid #ffeee0;font-size:12px;text-align:center;vertical-align:middle}
+table.reg td:first-child{text-align:left;font-weight:700;font-size:11px;padding-left:10px;min-width:95px;position:sticky;left:0;background:#fff;border-right:2px solid var(--border)}
+table.reg tr:nth-child(even) td{background:#fff8f8}
+table.reg tr:nth-child(even) td:first-child{background:#fff5f5}
+.ri{width:62px;border:1.5px solid var(--border);border-radius:8px;padding:7px 5px;font-size:13px;font-family:'DM Mono',monospace;font-weight:500;text-align:center;outline:none;background:#fff;-webkit-appearance:none}
+.ri:focus{border-color:var(--r2);background:#fff0f0}
+.ri.r{border-color:var(--rb);background:var(--rl);color:var(--r1)}
+.ri.r:focus{border-color:var(--r2)}
+.ri.o{border-color:#ffcc80;background:#fffde7;color:#5a3500}
+.ri.o:focus{border-color:#ff9800}
+.ri.g{border-color:var(--gb);background:var(--gl);color:var(--g1)}
+.ri.g:focus{border-color:var(--g3)}
+.c-due{color:var(--b2);font-weight:800;font-family:'DM Mono',monospace;font-size:13px}
+.c-op{color:var(--g2);font-weight:800;font-family:'DM Mono',monospace}
+.c-bal{color:var(--g1);font-weight:800;font-family:'DM Mono',monospace}
+.c-bal.neg{color:var(--r2)}
+.otag{font-size:7px;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;font-weight:800}
+.oy{background:var(--gl);color:var(--g2)}
+.on2{background:var(--rl);color:var(--r2)}
+.btn{width:100%;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:inherit}
+.btn-g{background:var(--g2);color:#fff}
+.btn-r{background:var(--r2);color:#fff}
+.btn-o{background:#ff9800;color:#fff}
+.btn-wa{background:#25d366;color:#fff}
+.brow{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.brow2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.alert{padding:10px 12px;border-radius:10px;font-size:11px;margin-bottom:10px;border-left:3px solid;line-height:1.5}
+.ar{background:var(--rl);border-color:var(--r2);color:var(--r1)}
+.ag{background:var(--gl);border-color:var(--g3);color:var(--g1)}
+.due-row-flag td{background:#e8eeff !important}
+.due-row-flag td:first-child{background:#dde7ff !important}
+#toast{position:fixed;bottom:calc(20px + var(--safe));left:50%;transform:translateX(-50%) translateY(60px);background:#3a0000;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all .28s;z-index:9999;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.tabs{display:flex;gap:0;background:#ffe8e8;border-radius:12px;padding:4px;margin-bottom:12px}
+.tab-btn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:9px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--muted);transition:all .15s}
+.tab-btn.active{background:#fff;color:var(--r1);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.sch-table{width:100%;border-collapse:collapse;font-size:11px}
+.sch-table th{background:var(--r1);color:#fff;padding:8px 10px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.sch-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.sch-table tr:nth-child(even) td{background:#fff8f8}
+.wk-badge{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.site-chip{display:inline-block;background:var(--rl);color:var(--r1);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin:1px}
+/* Report */
+.rpt-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+table.rpt{width:100%;border-collapse:collapse;min-width:600px}
+table.rpt th{padding:7px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;text-align:center;color:#fff}
+table.rpt td{padding:6px 8px;border-bottom:1px solid #ffe8e8;font-size:11px;text-align:center;font-family:'DM Mono',monospace;font-weight:500}
+table.rpt td.sc-name{text-align:left;font-family:'DM Sans',sans-serif;font-weight:800;font-size:11px;padding-left:10px;position:sticky;left:0;background:#fff;border-right:2px solid var(--border);min-width:110px}
+table.rpt tr:nth-child(even) td{background:#fff5f5}
+table.rpt tr:nth-child(even) td.sc-name{background:#fff0f0}
+table.rpt tfoot td{background:#3a0000;color:#fff;font-weight:800;font-size:11px}
+table.rpt tfoot td.sc-name{background:#3a0000;color:#fff;font-family:'DM Sans',sans-serif}
+.rpt-vax-head{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.vax-chip{background:var(--rl);color:var(--r1);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:800;cursor:pointer;border:1.5px solid var(--rb)}
+.vax-chip.sel{background:var(--r2);color:#fff;border-color:var(--r2)}
+.mon-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.mon-bar label{font-size:11px;font-weight:700;color:var(--muted)}
+.mon-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;outline:none}
+.wa-btn{background:#25d366;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="topbar">
+    <div class="tb-info">
+      <div class="tb-title">&#128084; PO Vaccine Register</div>
+      <div class="tb-sub" id="home-date"></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="hero">
+      <div class="hero-name">PHC MP Banjara</div>
+      <div class="hero-sub">Pharmacy Officer — Issue &amp; Session Register</div>
+      <div class="hero-grid">
+        <div class="hg"><div class="n">13</div><div class="l">Sub Centres</div></div>
+        <div class="hg"><div class="n" id="h-sess">0</div><div class="l">Sessions</div></div>
+        <div class="hg"><div class="n" id="h-iss">0</div><div class="l">Issued Today</div></div>
+      </div>
+    </div>
+    <div class="alert ar">&#128084; <b>Pharmacy Officer:</b> Enter Issued doses, then after session enter Administered, Wasted and Returned/Discarded. ANM due slip entries appear automatically.</div>
+    <div class="sec">Sub Centres — Tap to open register</div>
+    <div class="sc-grid" id="sc-grid"></div>
+  </div>
+</div>
+
+<!-- SC REGISTER -->
+<div class="screen" id="s-sc">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">&#8592;</button>
+    <div class="tb-info">
+      <div class="tb-title" id="sc-title">Sub Centre</div>
+      <div class="tb-sub">PO Vaccine Register</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-reg" onclick="switchTab('reg')">📋 Register</button>
+      <button class="tab-btn" id="tab-sch" onclick="switchTab('sch')">📅 Schedule</button>
+      <button class="tab-btn" id="tab-rpt" onclick="switchTab('rpt')">📊 Report</button>
+    </div>
+    <div id="pane-reg">
+    <div class="sess-bar">
+      <label>Day</label>
+      <select id="reg-day" onchange="buildRegister()" style="display:none">
+        <option>Wednesday</option><option>Saturday</option>
+      </select>
+      <span id="reg-day-label" style="font-weight:800;font-size:13px"></span>
+      <label>Week</label>
+      <select id="reg-week" onchange="buildRegister()">
+        <option value="0">1st</option><option value="1">2nd</option>
+        <option value="2">3rd</option><option value="3">4th</option>
+      </select>
+      <div class="site-lbl" id="reg-site">—</div>
+    </div>
+    <div class="alert ar" style="font-size:10px">
+      &#128100; <b>Due &amp; Adm</b> = entered by ANM &nbsp;|&nbsp;
+      &#128084; <b>Issued</b> = PO enters &nbsp;|&nbsp;
+      <span style="background:#2e7d32;color:#fff;border-radius:3px;padding:1px 4px;font-size:8px;font-weight:800">ANM</span> badge = return auto-calculated from ANM adm entry
+    </div>
+    <div class="reg-wrap">
+      <table class="reg">
+        <thead>
+          <tr>
+            <th rowspan="2" style="background:#3a0000;text-align:left;padding-left:10px;vertical-align:middle">Vaccine</th>
+            <th rowspan="2" style="background:#1a5c2a;vertical-align:middle">Op.Bal<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#1a4fd6;font-size:9px">&#128100; ANM</th>
+            <th colspan="5" style="background:#6a0000;font-size:9px">&#128084; PHARMACY OFFICER</th>
+            <th rowspan="2" style="background:#1a5c2a;vertical-align:middle">Cl.Bal<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+          </tr>
+          <tr>
+            <th style="background:#1a4fd6">Due<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#6a0000">Issued<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#5a3500">Adm<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#7a4400">Wasted<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#1a5c2a">Returned<br><span style="font-size:8px;opacity:.8">OVP</span></th>
+            <th style="background:#6a0000">Discarded<br><span style="font-size:8px;opacity:.8">BCG/MR</span></th>
+          </tr>
+        </thead>
+        <tbody id="reg-body"></tbody>
+      </table>
+    </div>
+    <div class="brow">
+      <button class="btn btn-g" onclick="saveAll()">&#128190; Save &amp; Update Stock</button>
+    </div>
+    <div class="brow2">
+      <button class="btn btn-o" onclick="clearAll()">Clear Form</button>
+      <button class="btn btn-wa" onclick="waSlip()">&#128241; WhatsApp</button>
+    </div>
+    <div style="height:16px"></div>
+    </div><!-- end pane-reg -->
+    <div id="pane-sch" style="display:none">
+      <div id="sch-body"></div>
+      <div style="height:16px"></div>
+    </div>
+    <div id="pane-rpt" style="display:none">
+      <div class="mon-bar" style="margin-top:4px">
+        <label>Month</label>
+        <select id="sc-rpt-month" onchange="buildSCReport()"></select>
+      </div>
+      <div id="sc-rpt-body"></div>
+      <div style="height:16px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="s-report">
+  <div class="topbar">
+    <button class="tb-back" onclick="closeReport()">&#8592;</button>
+    <div class="tb-info">
+      <div class="tb-title">&#128202; Consumption Report</div>
+      <div class="tb-sub">Sub Centre Wise — All Vaccines</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="mon-bar">
+      <label>Month</label>
+      <select id="rpt-month" onchange="renderReport()"></select>
+      <button class="wa-btn" onclick="waReport()">&#128241; Share</button>
+    </div>
+    <div id="rpt-vax-sel" class="rpt-vax-head"></div>
+    <div id="rpt-body"></div>
+    <div style="height:16px"></div>
+  </div>
+</div>
+<div id="sync-status" style="position:fixed;top:8px;right:10px;font-size:9px;font-weight:800;color:#fff;opacity:.85;z-index:9999;pointer-events:none">⏳</div>
+<div id="toast"></div>
+
+<script>
+function dbg(m){console.log(m);}
+// ═══ FIREBASE CONFIG — replace with your own from Firebase Console ═══
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara",
+  storageBucket: "phc-banjara.firebasestorage.app",
+  messagingSenderId: "588369297675",
+  appId: "1:588369297675:web:9265b6db25e5e3cd6ea20e"
+};
+// ════════════════════════════════════════════════════════════════════
+
+const KEY='phcv5';
+const VACCINES=['BCG','OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','MR','JE','DPT Booster','TD','Vit-A'];
+const OVP=['OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','JE','DPT Booster','TD','Vit-A'];
+const NOVP=['BCG','MR'];
+const DPV={'BCG':5,'OPV':20,'fIPV':50,'Hep-B':10,'Pentavalent':10,'RVV':2,'PCV':5,'MR':5,'JE':5,'DPT Booster':10,'TD':10,'Vit-A':1};
+const WF=1.33;
+const WKS=['1st Week','2nd Week','3rd Week','4th Week'];
+const SC_LIST=[
+  {name:'Anjanapuram',day:'Wednesday'},{name:'MP Banjara',day:'Wednesday'},
+  {name:'Laxmipuram',day:'Wednesday'},{name:'Gandhi Nagar',day:'Wednesday'},
+  {name:'Burgampadu-2',day:'Wednesday'},{name:'Sarapaka',day:'Wednesday'},
+  {name:'Muthyalampeta',day:'Wednesday'},{name:'SR Palem',day:'Saturday'},
+  {name:'Burgampadu-1',day:'Saturday'},{name:'NN Prolu',day:'Saturday'},
+  {name:'Iravendi',day:'Saturday'},{name:'Krishna Sagar',day:'Saturday'},
+  {name:'Tekulachervu',day:'Saturday'},
+];
+const SCH={
+  'Anjanapuram':{wed:['SC Anjanapuram','AWC Anjanapuram-1','AWC Anjanapuram-2','Anjanapuram SC'],sat:['Sompalli','-','G.G. Palli','Buddagudem']},
+  'MP Banjara':{wed:['SC Colony-1','Bestabazar MPB','SC Colony-1','Bestabazar MPB'],sat:['Temple Area','KCR Colony','-','Jinkalagudem']},
+  'Laxmipuram':{wed:['Laxmipuram SC','Laxmipuram-2','Laxmipuram SC','Marrikunta'],sat:['Vepalagadda Laxmi','Polavaram Laxmi','Laxmipuram-3','-']},
+  'Gandhi Nagar':{wed:['AWC Vijayanagaram','Gandhinagar SC','AWC Gandhinagar-2','Bhaskarnagar'],sat:['Srirampuram','Rajeevnagar','Odiyacamp','-']},
+  'Burgampadu-2':{wed:['BPD-2 SC','Rice Mill Area','Mudiraj Bazar','Burgampadu-II'],sat:['Old Sarapaka','Old Sarapaka','Old Sarapaka','-']},
+  'Sarapaka':{wed:['Sundaraiah Nagar','Conductors Colony','Sub-Centre','Conductors Colony'],sat:['Basappa Camp','Masjid Area','G.P.O Area','-']},
+  'Muthyalampeta':{wed:['Mutyalampeta SC','Mutyalampeta SC','East Gate','-'],sat:['East Gate','Ricksha Colony','Mede Colony','Pragathi Area']},
+  'SR Palem':{wed:['SR Palem','Reddypalem-2','SC Gowtapuram','Gowthapuram School'],sat:['SC Colony Gowthapuram','School Area','Reddypalem-2','-']},
+  'Burgampadu-1':{wed:['Ramalayam SC','-','-','-'],sat:['AWC SC Colony-1','SC Colony-2','AWC SC Colony-1','AWC SC Colony-2']},
+  'NN Prolu':{wed:['NNProlu SC Colony','Gommuru','SC Colony-1','NN Prolu SC'],sat:['ST Colony','NNP Sub-Centre','BC Colony NNP','-']},
+  'Iravendi':{wed:['Koyagudem','Iravendi SC','Iravendi SC','Thallagommuru'],sat:['Chintakunta','Mothe','Godaramma Colony','-']},
+  'Krishna Sagar':{wed:['Devaiah Gumpu','SC Colony KSR','Singaram','S. Ramapuram'],sat:['Musalama Illugo','ST Colony & Urladosapadu','Bathulanagar','-']},
+  'Tekulachervu':{wed:['Tekulachervu','Yeddulachervu','Tekulachervu','Gopalapuram'],sat:['Nakiripeta','Woodyard Colony','-','Kothuruthanda']},
+};
+const TODAY=new Date(),TSTR=TODAY.toISOString().split('T')[0],DOW=TODAY.getDay();
+function blankSC(){const d={vax:{},sessions:[]};VACCINES.forEach(v=>{d.vax[v]={openBal:0};});return d;}
+let DB={};
+let firebaseDB=null;
+let firebaseReady=false;
+let pendingSave=null; // stores SC name+data to save when Firebase connects
+
+try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
+SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+
+
+// Fix Firebase array->object conversion
+function normalizeDB(data){
+  if(!data) return data;
+  Object.keys(data).forEach(scName=>{
+    const sc = data[scName];
+    if(sc && sc.sessions && !Array.isArray(sc.sessions)){
+      sc.sessions = Object.values(sc.sessions);
+    }
+  });
+  return data;
+}
+
+
+
+
+
+
+// Get Nth occurrence of weekday in current month (1-based)
+function getNthWeekday(weekday, n){
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), 1);
+  let count = 0;
+  while(d.getMonth() === now.getMonth()){
+    if(d.getDay() === weekday){ count++; if(count===n) return d.toISOString().split('T')[0]; }
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+
+// Get the NEXT upcoming session date for a given day name
+// If today is that day -> use today
+// If that day hasn't come yet this week -> use next occurrence
+// Always use the nearest UPCOMING date
+function getScDate(sc){
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const targetDow = sc.day==='Wednesday'?3:6;
+  // Find all occurrences of this weekday in current month
+  const d = new Date(now.getFullYear(), now.getMonth(), 1);
+  let dates = [];
+  while(d.getMonth()===now.getMonth()){
+    if(d.getDay()===targetDow) dates.push(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate()+1);
+  }
+  // Return nearest upcoming date (>= today)
+  const upcoming = dates.filter(dt=>dt>=today);
+  return upcoming.length>0 ? upcoming[0] : dates[dates.length-1];
+}
+
+function fmtDate(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear();
+}
+
+// Get week number (1-4) for a given date in its month
+function getWeekNum(dateStr){
+  if(!dateStr) return 1;
+  const d = new Date(dateStr+'T00:00:00');
+  const dow = d.getDay();
+  let count=0;
+  const m = new Date(d.getFullYear(), d.getMonth(), 1);
+  while(m<=d){
+    if(m.getDay()===dow) count++;
+    m.setDate(m.getDate()+1);
+  }
+  return count;
+}
+
+
+// Get session date: SC day is fixed, only week changes
+function getSelectedDate(){
+  const sc = CUR!=null ? SC_LIST[CUR] : null;
+  if(!sc) return TSTR;
+  const wk = parseInt(document.getElementById('reg-week')?.value||0) + 1;
+  const targetDow = sc.day==='Wednesday'?3:6;
+  return getNthWeekday(targetDow, wk) || TSTR;
+}
+
+function initFirebase(){
+  showSyncStatus('⏳ Step1');
+  try{
+    showSyncStatus('⏳ Step2');
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    showSyncStatus('⏳ Step3');
+    firebaseDB=firebase.database();
+    showSyncStatus('⏳ Step4');
+    firebaseReady=true;
+    showSyncStatus('⏳ Step5-connecting');
+    firebaseDB.ref('phc_data').once('value', snap=>{
+      const data=snap.val();
+      if(data){
+        normalizeDB(data);
+        DB=data;
+        SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
+      firebaseReady=true;
+      buildDash();
+      checkAlerts();
+      showSyncStatus('🟢 Synced');
+      if(pendingSave){
+        firebaseDB.ref('phc_data/'+pendingSave.name).set(pendingSave.data)
+          .then(()=>{showSyncStatus('🟢 Synced');toast('✅ Saved!');pendingSave=null;})
+          .catch(e=>showSyncStatus('🔴 '+e.code));
+      }
+    });
+    firebaseDB.ref('phc_data').on('value', snap=>{
+      const data=snap.val();
+      if(data){
+        normalizeDB(data);
+        Object.keys(data).forEach(scName=>{ DB[scName]=data[scName]; });
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
+      showSyncStatus('🟢 Synced');
+      const scScreen=document.getElementById('s-sc');
+      if(scScreen&&scScreen.classList.contains('active')&&SC_LIST[CUR]){
+        buildRegister();
+      } else {
+        buildDash();checkAlerts();
+      }
+    });
+    firebaseDB.ref('.info/connected').on('value', snap=>{
+      if(!snap.val()) showSyncStatus('🔴 Offline');
+    });
+  } catch(e){
+    showSyncStatus('🔴 ERR');
+    toast('🔴 ERROR: '+e.message);
+    alert('Firebase Error: '+e.message);
+  }
+}
+
+function showSyncStatus(msg){
+  let el=document.getElementById('sync-status');
+  if(!el){
+    el=document.createElement('div');
+    el.id='sync-status';
+    el.style.cssText='position:fixed;top:8px;right:10px;font-size:9px;font-weight:800;color:#fff;opacity:.85;z-index:9999;pointer-events:none';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+}
+
+// Wipe corrupted openBal
+(function(){
+  if(localStorage.getItem('phc_migrated_v3')) return;
+  SC_LIST.forEach(sc=>{VACCINES.forEach(v=>{
+    if((DB[sc.name]?.vax[v]?.openBal||0)>9999) DB[sc.name].vax[v].openBal=0;
+  });});
+  try{localStorage.setItem('phc_migrated_v3','1');}catch(e){}
+})();
+
+
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  const curSC=CUR!=null?SC_LIST[CUR]:null;
+  if(!curSC) return;
+  function doWrite(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+curSC.name).set(DB[curSC.name])
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      // Firebase not ready yet - retry after 2 seconds
+      showSyncStatus('⏳ Saving...');
+      setTimeout(doWrite, 2000);
+    }
+  }
+  doWrite();
+}
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+let CUR=0;
+
+function goHome(){
+  document.getElementById('s-sc').classList.remove('active');
+  document.getElementById('s-home').classList.add('active');
+  buildDash();window.scrollTo(0,0);
+}
+
+function buildDash(){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('home-date').textContent=days[DOW]+' — '+TODAY.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  let totSess=0,totIss=0;
+  SC_LIST.forEach(sc=>{
+    const d=DB[sc.name]||blankSC();
+    totSess+=(d.sessions||[]).length;
+    const scD=getScDate(sc);
+    (d.sessions||[]).filter(s=>s.date===scD).forEach(s=>{
+      VACCINES.forEach(v=>{totIss+=(s.data?.[v]?.iss||0);});
+    });
+  });
+  document.getElementById('h-sess').textContent=totSess;
+  document.getElementById('h-iss').textContent=totIss;
+  document.getElementById('sc-grid').innerHTML=SC_LIST.map((sc,i)=>{
+    const d=DB[sc.name]||blankSC();
+    const cls=sc.day==='Wednesday'?'wed':'sat';
+    const todaySess=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+    let dueCount=0,issCount=0;
+    if(todaySess){
+      VACCINES.forEach(v=>{
+        dueCount+=(todaySess.data?.[v]?.due||0);
+        issCount+=(todaySess.data?.[v]?.iss||0);
+      });
+    }
+    return '<div class="sc-card '+cls+'" onclick="openSC('+i+')">'+
+      '<div class="sname">'+sc.name+'</div>'+
+      '<div class="sday">'+sc.day+' <span style="font-weight:600;opacity:.8">'+fmtDate(getScDate(sc))+'</span></div>'+
+      (dueCount>0?'<div class="due-badge">&#128100; Due: '+dueCount+'</div><br>':'<div style="margin-top:6px;font-size:9px;color:var(--muted)">No ANM due slip yet</div>')+
+      (issCount>0?'<div class="iss-badge">&#128084; Issued: '+issCount+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function openSC(i){
+  CUR=i;
+  const sc=SC_LIST[i];
+  document.getElementById('sc-title').textContent=sc.name;
+  // Always use SC's own day and correct week number
+  const scDateForOpen=getScDate(sc);
+  document.getElementById('reg-day').value=sc.day;
+  const dayLabel=document.getElementById('reg-day-label');
+  if(dayLabel) dayLabel.textContent=sc.day;
+  document.getElementById('reg-week').value=getWeekNum(scDateForOpen)-1;
+  buildRegister();
+  document.getElementById('s-home').classList.remove('active');
+  document.getElementById('s-sc').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function buildRegister(){
+  const sc=SC_LIST[CUR];const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const sch=SCH[sc.name];
+  const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
+  const scDate=getSelectedDate();
+  const scDateFmt=new Date(scDate+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
+  // Show date prominently
+  let dateBadge=document.getElementById('session-date-badge');
+  if(!dateBadge){
+    dateBadge=document.createElement('div');
+    dateBadge.id='session-date-badge';
+    dateBadge.style.cssText='background:#1a5c2a;color:#fff;text-align:center;padding:8px;font-size:14px;font-weight:800;border-radius:10px;margin-bottom:10px';
+    const sessBar=document.querySelector('.sess-bar');
+    if(sessBar) sessBar.insertAdjacentElement('afterend',dateBadge);
+  }
+  dateBadge.textContent='📅 Session Date: '+scDateFmt;
+  const saved=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+    document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
+    const opDoses=isOVP?(d.vax[v]?.openBal||0):0;
+    const sv=saved?saved.data[v]||{}:{};
+    const due=sv.due||0;
+    const sv_iss=sv.iss||0,sv_adm=sv.adm||0;
+    const sv_wst=sv.wst||0;
+    const totalIss=opDoses+sv_iss;
+    const usedD=sv_adm+sv_wst;
+    const remD=Math.max(totalIss-usedD,0);
+    // NOVP (BCG/MR): disc = opened vial doses, ret = iss - disc (unopened back to PHC)
+    const novpDisc=isOVP?0:(sv_adm>0?Math.ceil(sv_adm/dpv)*dpv-sv_adm:0);
+    const novpRet=isOVP?0:Math.max(sv_iss-(sv_adm>0?Math.ceil(sv_adm/dpv)*dpv:0),0);
+    // OVP: ret = remaining doses carry forward
+    const autoRet=isOVP?remD:novpRet;
+    const sv_ret=isOVP?(sv.ret!=null&&sv.ret!==0?sv.ret:(sv_iss>0||sv_adm>0?autoRet:0)):novpRet;
+    const sv_disc=isOVP?0:novpDisc;
+    const cl_d=isOVP?sv_ret:0;
+    const tag='<span class="otag '+(isOVP?'oy':'on2')+'">'+(isOVP?'OVP':'DISC')+'</span>';
+    const hasDue=due>0;
+    return '<tr'+(hasDue?' class="due-row-flag"':'')+'>'+
+      '<td>'+v+tag+'</td>'+
+      // Op.Bal (OVP only)
+      '<td class="c-op">'+(isOVP?(opDoses||'—'):'—')+'</td>'+
+      // Due — read only, from ANM
+      '<td class="c-due" style="background:'+(hasDue?'#e8eeff':'')+'">'+
+        (hasDue?'<b>'+due+'</b>':'—')+
+      '</td>'+
+      // Issued — PO enters
+      '<td><input class="ri r" type="number" min="0" placeholder="PO" id="iss_'+k+'"'+
+        ' value="'+(sv_iss||'')+'" data-v="'+v+'" data-k="'+k+'"'+
+        ' oninput="liveCl(this)" inputmode="numeric"></td>'+
+      // Adm
+      '<td><input class="ri o" type="number" min="0" placeholder="0" id="adm_'+k+'"'+
+        ' value="'+(sv_adm||'')+'" data-v="'+v+'" data-k="'+k+'"'+
+        ' oninput="liveCl(this)" inputmode="numeric"></td>'+
+      // Wasted
+      '<td><input class="ri o" type="number" min="0" placeholder="0" id="wst_'+k+'"'+
+        ' value="'+(sv_wst||'')+'" data-v="'+v+'" data-k="'+k+'"'+
+        ' oninput="liveCl(this)" inputmode="numeric"></td>'+
+      // Returned + Discarded — both shown for all vaccines
+      // OVP: Returned = editable, Discarded = —
+      // NOVP (BCG/MR): Returned = auto (unopened vials), Discarded = auto (opened vials), Cl.Bal = —
+      (isOVP
+        ?'<td style="position:relative"><input class="ri g" type="number" min="0" placeholder="0" id="ret_'+k+'"'+
+            ' value="'+(sv_ret||'')+'" data-v="'+v+'" data-k="'+k+'"'+
+            ' oninput="liveCl(this)" inputmode="numeric"'+(sv_ret>0&&sv_adm>0?' style="border-color:#2e7d32;background:#d0f0d8"':'')+'>'+
+            (sv_ret>0&&sv_adm>0?'<span style="position:absolute;top:-6px;right:2px;font-size:7px;background:#2e7d32;color:#fff;border-radius:4px;padding:1px 4px;font-weight:800">ANM</span>':'')+
+          '</td>'+
+          '<td style="color:var(--muted);font-size:10px">—</td>'
+        // NOVP: Returned = unopened vials back to PHC (auto), Discarded = opened vials (auto)
+        :'<td class="c-done" id="ret_'+k+'">'+(sv_ret||'—')+'</td>'+
+          '<td class="c-done" id="disc_'+k+'" style="color:#b71c1c">'+(sv_disc||'—')+'</td>'
+      )+
+      '<td class="c-bal" id="cl_'+k+'">'+(isOVP?(cl_d<0?'<span class="neg">'+cl_d+'</span>':cl_d):'—')+'</td>'+
+    '</tr>';
+  }).join('')+
+  '';
+}
+
+function liveCl(inp){
+  const k=inp.dataset.k,v=inp.dataset.v;
+  const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
+  const d=DB[SC_LIST[CUR].name]||blankSC();
+  const opDoses=isOVP?(d.vax[v]?.openBal||0):0;
+  const issDoses=parseInt(document.getElementById('iss_'+k)?.value)||0;
+  const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+  const wst=parseInt(document.getElementById('wst_'+k)?.value)||0;
+  const totalDoses=opDoses+issDoses;
+  const usedDoses=adm+wst;
+  const remDoses=Math.max(totalDoses-usedDoses,0);
+  if(isOVP){
+    // OVP: auto-fill returned doses = remaining doses
+    const retEl=document.getElementById('ret_'+k);
+    if(retEl&&(inp.id==='adm_'+k||inp.id==='wst_'+k||inp.id==='iss_'+k)){
+      retEl.value=remDoses||'';
+    }
+    const retDoses=parseInt(document.getElementById('ret_'+k)?.value)||0;
+    const clEl=document.getElementById('cl_'+k);
+    if(clEl){clEl.textContent=retDoses;clEl.className='c-bal';}
+  } else {
+    // NOVP (BCG/MR): disc = ceil(adm/dpv)*dpv, ret = iss - disc
+    const openedVialDoses=adm>0?Math.ceil(adm/dpv)*dpv:0;
+    const retUnopened=Math.max(issDoses-openedVialDoses,0);
+    const discEl=document.getElementById('disc_'+k);
+    const retEl=document.getElementById('ret_'+k);
+    if(discEl) discEl.textContent=openedVialDoses||'—';
+    if(retEl) retEl.textContent=(issDoses>0?(retUnopened||'0'):'—');
+    const clEl=document.getElementById('cl_'+k);
+    if(clEl){clEl.textContent='—';clEl.className='c-bal';}
+  }
+}
+
+function saveAll(){
+  // If Firebase not ready, queue the save
+  if(!firebaseDB){
+    toast('⏳ Queued — will save when connected');
+    // Fall through - data will be saved to localStorage and queued for Firebase
+  }
+  const sc=SC_LIST[CUR];const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  let any=false;const newOpenDoses={};
+  const ei=d.sessions?d.sessions.findIndex(s=>s.date===getScDate(sc)):-1;
+  const existingData=ei>=0?d.sessions[ei].data:{};
+  const data={};
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
+    const due=existingData[v]?.due||0; // preserve ANM's due
+    const issDoses=parseInt(document.getElementById('iss_'+k)?.value)||0;
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    const wst=parseInt(document.getElementById('wst_'+k)?.value)||0;
+    const opDoses=isOVP?(d.vax[v]?.openBal||0):0;
+    let retFinal=0,discFinal=0;
+    if(isOVP){
+      retFinal=parseInt(document.getElementById('ret_'+k)?.value)||0;
+      discFinal=0;
+    } else {
+      // NOVP (BCG/MR): discard leftover from opened vial only, return unopened vials
+      const openedD=adm>0?Math.ceil(adm/dpv)*dpv:0;
+      discFinal=openedD-adm; // leftover doses in opened vial
+      retFinal=Math.max(issDoses-openedD,0); // unopened vials returned
+    }
+    const clDoses=isOVP?retFinal:0;
+    newOpenDoses[v]=clDoses;
+    data[v]={due,iss:issDoses,adm,wst,ret:retFinal,disc:discFinal};
+    if(issDoses||adm||wst||retFinal||discFinal) any=true;
+  });
+  if(!any){toast('Enter at least one value to save');return;}
+  // Update openBal for ALL vaccines (remaining doses carry forward)
+  VACCINES.forEach(v=>{
+    d.vax[v]={openBal:newOpenDoses[v]||0};
+  });
+  if(!d.sessions)d.sessions=[];
+  const rec={date:getNthWeekday(sc.day==='Wednesday'?3:6, wk+1)||TSTR,day,week:wk,data,at:new Date().toISOString()};
+  if(ei>=0)d.sessions[ei]=rec;else d.sessions.push(rec);
+  DB[sc.name]=d;
+  // Save to localStorage
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  // Write directly to Firebase - don't wait for SDK, retry if needed
+  function writeToFirebase(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(d)
+        .then(()=>{showSyncStatus('🟢 Synced');pendingSave=null;})
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      // Queue for when Firebase connects
+      pendingSave={name:sc.name, data:d};
+      showSyncStatus('⏳ Queued');
+    }
+  }
+  writeToFirebase();
+  buildRegister();
+  toast('✅ Saved & syncing to Firebase');
+}
+
+function clearAll(){
+  const sc=SC_LIST[CUR];const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  // Only clear PO fields — keep ANM due intact
+  if(d.sessions){
+    const ei=d.sessions.findIndex(s=>s.date===TSTR);
+    if(ei>=0){
+      VACCINES.forEach(v=>{
+        if(d.sessions[ei].data[v]){
+          const due=d.sessions[ei].data[v].due||0;
+          d.sessions[ei].data[v]={due,iss:0,adm:0,wst:0,ret:0,disc:0};
+        }
+      });
+      DB[sc.name]=d;save();
+    }
+  }
+  buildRegister();toast('PO entries cleared');
+}
+
+function waSlip(){
+  const sc=SC_LIST[CUR];const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const sch=SCH[sc.name];
+  const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
+  let lines=['PHC MP BANJARA','VACCINE REGISTER','---',
+    'SC: '+sc.name,'Day: '+WKS[wk]+' '+day,'Site: '+site,'---',
+    'Vaccine | Due | Issued | Adm | Bal',''];
+  let any=false;
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');const isOVP=OVP.includes(v);
+    const due=parseInt(document.getElementById('due_'+k)?.textContent)||0;
+    const iss=parseInt(document.getElementById('iss_'+k)?.value)||0;
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    const ret=isOVP?(parseInt(document.getElementById('ret_'+k)?.value)||0):0;
+    if(iss||adm){
+      lines.push(v+': Due '+due+' | Iss '+iss+' | Adm '+adm+' | Bal '+ret);
+      any=true;
+    }
+  });
+  if(!any){toast('Enter data first');return;}
+  lines.push('','PHC MP BANJARA, Bhadradri Kothagudem');
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
+}
+
+
+// Firebase SDK loaded via <script> tags in <head>
+// Call initFirebase directly when DOM ready
+window.addEventListener('load', initFirebase);
+
+buildDash();
+
+// Auto-refresh when ANM app saves data (same device, same browser)
+window.addEventListener('storage', function(e){
+  if(e.key !== KEY) return;
+  // Reload DB from localStorage
+  try{DB=JSON.parse(e.newValue||'{}');}catch(err){}
+  SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+  // If SC register is open, refresh it to show ANM's new adm values
+  if(document.getElementById('s-sc').classList.contains('active')){
+    syncANMAdm();
+  }
+  // Refresh dashboard badges
+  buildDash();
+});
+
+// Pull latest ANM data into ret fields without overwriting PO's manual entries
+function syncANMAdm(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const saved=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+  if(!saved) return;
+  let updated=false;
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
+    const admFromANM=saved.data?.[v]?.adm||0;
+    if(!admFromANM) return;
+    // Update adm field with ANM's value
+    const admEl=document.getElementById('adm_'+k);
+    if(admEl&&!admEl.value){
+      admEl.value=admFromANM;
+      updated=true;
+    }
+    // Recalculate ret/disc/cl
+    const opDoses=isOVP?(d.vax[v]?.openBal||0):0;
+    const issDoses=parseInt(document.getElementById('iss_'+k)?.value)||0;
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    const wst=parseInt(document.getElementById('wst_'+k)?.value)||0;
+    const totalDoses=opDoses+issDoses;
+    const remDoses=Math.max(totalDoses-adm-wst,0);
+    if(isOVP){
+      const retEl=document.getElementById('ret_'+k);
+      if(retEl&&!retEl.value){retEl.value=remDoses||'';}
+      const retDoses=parseInt(document.getElementById('ret_'+k)?.value)||0;
+      const clEl=document.getElementById('cl_'+k);
+      if(clEl){clEl.textContent=retDoses;clEl.className='c-bal';}
+    } else {
+      const discEl=document.getElementById('disc_'+k);
+      const usedDoses=adm+wst;
+      const openedVialDoses=usedDoses>0?Math.ceil(usedDoses/dpv)*dpv:0;
+      if(discEl&&!discEl.value){discEl.value=openedVialDoses||'';}
+      const discDoses=parseInt(document.getElementById('disc_'+k)?.value)||0;
+      const cl=Math.max(totalDoses-discDoses,0);
+      const clEl=document.getElementById('cl_'+k);
+      if(clEl){clEl.textContent=cl;clEl.className='c-bal';}
+    }
+  });
+  if(updated) showSyncBadge();
+}
+
+function showSyncBadge(){
+  let badge=document.getElementById('sync-badge');
+  if(!badge){
+    badge=document.createElement('div');
+    badge.id='sync-badge';
+    badge.style.cssText='position:fixed;top:70px;right:12px;background:#1a4fd6;color:#fff;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;z-index:9999;transition:opacity .3s';
+    badge.textContent='↻ ANM updated — refreshed';
+    document.body.appendChild(badge);
+  }
+  badge.style.opacity='1';
+  setTimeout(()=>{badge.style.opacity='0';},2500);
+}
+
+function switchTab(t){
+  ['reg','sch','rpt'].forEach(n=>{
+    document.getElementById('pane-'+n).style.display=n===t?'block':'none';
+    document.getElementById('tab-'+n).classList.toggle('active',n===t);
+  });
+  if(t==='sch') buildScheduleTab();
+  if(t==='rpt') initSCReport();
+}
+
+function initSCReport(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const months=new Set();
+  (d.sessions||[]).forEach(s=>{if(s.date) months.add(s.date.slice(0,7));});
+  months.add(TSTR.slice(0,7));
+  const sorted=[...months].sort().reverse();
+  const sel=document.getElementById('sc-rpt-month');
+  sel.innerHTML=sorted.map(m=>{
+    const dl=new Date(m+'-01');
+    const lbl=dl.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    return '<option value="'+m+'">'+lbl+'</option>';
+  }).join('');
+  buildSCReport();
+}
+
+function buildSCReport(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const ym=document.getElementById('sc-rpt-month').value;
+  if(!ym) return;
+  const sessions=(d.sessions||[]).filter(s=>s.date&&s.date.startsWith(ym));
+  const monLbl=new Date(ym+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+
+  // Aggregate
+  const agg={};
+  VACCINES.forEach(v=>{agg[v]={op:d.vax[v]?.openBal||0,iss:0,adm:0,wst:0,ret:0,disc:0,cl:0};});
+  sessions.forEach(s=>{
+    VACCINES.forEach(v=>{
+      agg[v].iss+=(s.data?.[v]?.iss||0);
+      agg[v].adm+=(s.data?.[v]?.adm||0);
+      agg[v].wst+=(s.data?.[v]?.wst||0);
+      agg[v].ret+=(s.data?.[v]?.ret||0);
+      agg[v].disc+=(s.data?.[v]?.disc||0);
+    });
+  });
+  VACCINES.forEach(v=>{
+    agg[v].cl=OVP.includes(v)?agg[v].ret:Math.max(agg[v].op+agg[v].iss-agg[v].disc,0);
+  });
+
+  let totIss=0,totAdm=0,totWst=0;
+  let html='<div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">'+sc.name+' — '+monLbl+'</div>';
+  html+='<div class="rpt-wrap"><table class="rpt">';
+  html+='<thead><tr>'+
+    '<th style="background:#3a0000;text-align:left;padding-left:10px">Vaccine</th>'+
+    '<th style="background:#1a5c2a">Op.Bal</th>'+
+    '<th style="background:#6a0000">Issued</th>'+
+    '<th style="background:#5a3500">Adm</th>'+
+    '<th style="background:#7a4400">Wasted</th>'+
+    '<th style="background:#1a5c2a">Ret/Disc</th>'+
+    '<th style="background:#1a5c2a">Cl.Bal</th>'+
+  '</tr></thead><tbody>';
+
+  VACCINES.forEach(v=>{
+    const a=agg[v];
+    const rd=OVP.includes(v)?a.ret:a.disc;
+    const hasData=a.op||a.iss||a.adm||a.wst||rd;
+    if(!hasData) return;
+    totIss+=a.iss; totAdm+=a.adm; totWst+=a.wst;
+    const isOVP2=OVP.includes(v);
+    html+='<tr>'+
+      '<td style="text-align:left;font-weight:800;font-size:11px;padding-left:10px;position:sticky;left:0;background:#fff;border-right:2px solid #eee">'+v+'</td>'+
+      '<td class="c-op">'+(isOVP2?(a.op||'—'):'—')+'</td>'+
+      '<td>'+(a.iss||'—')+'</td>'+
+      '<td><b>'+(a.adm||'—')+'</b></td>'+
+      '<td>'+(a.wst||'—')+'</td>'+
+      '<td>'+(rd||'—')+'</td>'+
+      '<td class="c-bal"><b>'+(isOVP2?a.cl:'—')+'</b></td>'+
+    '</tr>';
+  });
+
+  if(!sessions.length){
+    html+='<tr><td colspan="7" style="text-align:center;color:var(--muted);font-style:italic;padding:14px;font-family:DM Sans,sans-serif;font-size:11px">No sessions this month</td></tr>';
+  }
+
+  html+='</tbody>';
+  if(sessions.length){
+    html+='<tfoot><tr>'+
+      '<td style="background:#3a0000;color:#fff;font-weight:900;text-align:left;padding-left:10px;font-family:DM Sans,sans-serif">TOTAL</td>'+
+      '<td style="background:#3a0000;color:#fff">—</td>'+
+      '<td style="background:#3a0000;color:#fff"><b>'+totIss+'</b></td>'+
+      '<td style="background:#3a0000;color:#fff"><b>'+totAdm+'</b></td>'+
+      '<td style="background:#3a0000;color:#fff"><b>'+totWst+'</b></td>'+
+      '<td style="background:#3a0000;color:#fff">—</td>'+
+      '<td style="background:#3a0000;color:#fff">—</td>'+
+    '</tr></tfoot>';
+  }
+  html+='</table></div>';
+  document.getElementById('sc-rpt-body').innerHTML=html;
+}
+
+function buildScheduleTab(){
+  const sc=SC_LIST[CUR];
+  const sch=SCH[sc.name];
+  if(!sch){document.getElementById('sch-body').innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">No schedule</p>';return;}
+  let html='<div class="sec">Monthly Session Schedule — '+sc.name+'</div>';
+  html+='<div class="reg-wrap"><table class="sch-table">';
+  html+='<tr><th>Week</th><th>Wednesday Site</th><th>Saturday Site</th></tr>';
+  const WKS2=['1st Week','2nd Week','3rd Week','4th Week'];
+  for(let w=0;w<4;w++){
+    html+='<tr>'+
+      '<td><span class="wk-badge">'+WKS2[w]+'</span></td>'+
+      '<td><span class="site-chip">'+(sch.wed[w]||'-')+'</span></td>'+
+      '<td><span class="site-chip">'+(sch.sat[w]||'-')+'</span></td>'+
+    '</tr>';
+  }
+  html+='</table></div>';
+  document.getElementById('sch-body').innerHTML=html;
+}
+
+let RPT_VAX=VACCINES.slice(); // all selected by default
+
+function openReport(){
+  // Populate month selector
+  const sel=document.getElementById('rpt-month');
+  sel.innerHTML='';
+  // Collect all months from sessions
+  const months=new Set();
+  SC_LIST.forEach(sc=>{
+    (DB[sc.name]?.sessions||[]).forEach(s=>{if(s.date)months.add(s.date.slice(0,7));});
+  });
+  // Add current month always
+  months.add(TSTR.slice(0,7));
+  const sorted=[...months].sort().reverse();
+  sorted.forEach(m=>{
+    const d=new Date(m+'-01');
+    const lbl=d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    sel.innerHTML+='<option value="'+m+'">'+lbl+'</option>';
+  });
+  // No filter — show all vaccines per SC
+  document.getElementById('rpt-vax-sel').innerHTML='';
+  RPT_VAX=VACCINES.slice();
+  // Switch to report screen
+  ['s-home','s-sc'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('active');});
+  document.getElementById('s-report').classList.add('active');
+  renderReport();
+  window.scrollTo(0,0);
+}
+
+function closeReport(){
+  document.getElementById('s-report').classList.remove('active');
+  document.getElementById('s-home').classList.add('active');
+  buildDash();window.scrollTo(0,0);
+}
+
+function toggleVax(el,k){
+  const v=VACCINES.find(x=>x.replace(/[^a-z0-9]/gi,'_')===k);
+  if(!v) return;
+  if(RPT_VAX.includes(v)){
+    RPT_VAX=RPT_VAX.filter(x=>x!==v);
+    el.classList.remove('sel');
+  } else {
+    RPT_VAX.push(v);
+    el.classList.add('sel');
+  }
+  renderReport();
+}
+
+function renderReport(){
+  const ym=document.getElementById('rpt-month').value;
+  if(!ym) return;
+  const d0=new Date(ym+'-01');
+  const monLbl=d0.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+
+  let html='<div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">'+monLbl+' — Sub Centre Wise</div>';
+
+  // One table per SC
+  SC_LIST.forEach(sc=>{
+    const d=DB[sc.name]||blankSC();
+    const sessions=(d.sessions||[]).filter(s=>s.date&&s.date.startsWith(ym));
+
+    // Aggregate per vaccine across all sessions this month
+    const agg={};
+    VACCINES.forEach(v=>{agg[v]={op:0,iss:0,adm:0,wst:0,ret:0,disc:0,cl:0};});
+
+    // Op.Bal = openBal stored in vax (start of month approximation)
+    VACCINES.forEach(v=>{agg[v].op=d.vax[v]?.openBal||0;});
+
+    sessions.forEach(s=>{
+      VACCINES.forEach(v=>{
+        agg[v].iss+=(s.data?.[v]?.iss||0);
+        agg[v].adm+=(s.data?.[v]?.adm||0);
+        agg[v].wst+=(s.data?.[v]?.wst||0);
+        agg[v].ret+=(s.data?.[v]?.ret||0);
+        agg[v].disc+=(s.data?.[v]?.disc||0);
+      });
+    });
+    VACCINES.forEach(v=>{
+      const isOVP=OVP.includes(v);
+      agg[v].cl=isOVP?agg[v].ret:Math.max(agg[v].op+agg[v].iss-agg[v].disc,0);
+    });
+
+    // Only show SC if any data this month
+    const hasData=VACCINES.some(v=>agg[v].iss||agg[v].adm);
+
+    html+='<div style="margin-bottom:18px">';
+    html+='<div style="background:var(--r1);color:#fff;padding:8px 12px;border-radius:10px 10px 0 0;font-size:12px;font-weight:900;display:flex;justify-content:space-between;align-items:center">'+
+      '<span>'+sc.name+'</span>'+
+      '<span style="font-size:9px;opacity:.7;font-weight:600">'+sc.day+'</span>'+
+    '</div>';
+    html+='<div class="rpt-wrap" style="border-radius:0 0 10px 10px;margin-bottom:0">';
+    html+='<table class="rpt">';
+    html+='<thead><tr>'+
+      '<th style="background:#3a0000;text-align:left;padding-left:10px">Vaccine</th>'+
+      '<th style="background:#1a5c2a">Op.Bal</th>'+
+      '<th style="background:#6a0000">Issued</th>'+
+      '<th style="background:#5a3500">Adm</th>'+
+      '<th style="background:#7a4400">Wasted</th>'+
+      '<th style="background:#1a5c2a">Returned</th>'+
+      '<th style="background:#6a0000">Discarded</th>'+
+      '<th style="background:#1a5c2a">Cl.Bal</th>'+
+    '</tr></thead><tbody>';
+
+    VACCINES.forEach(v=>{
+      const a=agg[v];
+      const isOVP=OVP.includes(v);
+      const hasRow=a.iss||a.adm||a.wst||a.ret||a.disc||a.op;
+      if(!hasRow) return;
+      html+='<tr>'+
+        '<td style="text-align:left;font-weight:800;font-size:10px;padding-left:10px;position:sticky;left:0;background:#fff;border-right:2px solid #eee">'+v+'</td>'+
+        '<td class="c-op">'+(isOVP?(a.op||'—'):'—')+'</td>'+
+        '<td>'+(a.iss||'—')+'</td>'+
+        '<td><b>'+(a.adm||'—')+'</b></td>'+
+        '<td>'+(a.wst||'—')+'</td>'+
+        (isOVP
+          ?'<td><b>'+(a.ret||'—')+'</b></td><td style="color:#ccc">—</td>'
+          :'<td style="color:#ccc">—</td><td><b>'+(a.disc||'—')+'</b></td>'
+        )+
+        '<td class="c-bal"><b>'+(isOVP?(a.cl||'—'):'—')+'</b></td>'+
+      '</tr>';
+    });
+
+    if(!hasData){
+      html+='<tr><td colspan="8" style="text-align:center;color:var(--muted);font-style:italic;padding:12px;font-family:DM Sans,sans-serif;font-size:11px">No sessions recorded this month</td></tr>';
+    }
+
+    html+='</tbody></table></div></div>';
+  });
+
+  document.getElementById('rpt-body').innerHTML=html;
+}
+
+function waReport(){
+  const ym=document.getElementById('rpt-month').value;
+  if(!ym) return;
+  const d=new Date(ym+'-01');
+  const lbl=d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const vaxToShow=VACCINES.filter(v=>RPT_VAX.includes(v));
+  let lines=['PHC MP BANJARA','VACCINE CONSUMPTION REPORT','Month: '+lbl,'Sub Centre Wise','---'];
+  SC_LIST.forEach(sc=>{
+    const sessions=(DB[sc.name]?.sessions||[]).filter(s=>s.date&&s.date.startsWith(ym));
+    if(!sessions.length) return;
+    lines.push('\n'+sc.name+':');
+    vaxToShow.forEach(v=>{
+      let iss=0,adm=0;
+      sessions.forEach(s=>{iss+=(s.data?.[v]?.iss||0);adm+=(s.data?.[v]?.adm||0);});
+      if(adm||iss) lines.push('  '+v+': Iss='+iss+' Adm='+adm);
+    });
+  });
+  lines.push('\n---\nPHC MP BANJARA, Bhadradri Kothagudem');
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
+}
+
+</script>
+</body>
+</html>
