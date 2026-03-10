@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firebase Write Test</title>
+<style>
+body{font-family:sans-serif;padding:20px;font-size:16px}
+button{background:#1a5c2a;color:#fff;border:none;padding:15px;border-radius:8px;font-size:16px;margin:8px 0;width:100%;cursor:pointer}
+#log{background:#f0f0f0;padding:15px;border-radius:8px;margin-top:15px;min-height:100px;font-size:14px;font-family:monospace}
+</style>
+</head>
+<body>
+<h2>🔥 Firebase Direct Write Test</h2>
+<button onclick="doWrite()">1️⃣ Write OPV iss=99 to Firebase</button>
+<button onclick="doRead()">2️⃣ Read back from Firebase</button>
+<button onclick="doDelete()">3️⃣ Delete test data</button>
+<div id="log">Waiting...</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+const TODAY = new Date().toISOString().split('T')[0];
+
+function log(msg){
+  document.getElementById('log').innerHTML += '<br>' + new Date().toLocaleTimeString() + ': ' + msg;
+}
+
+log('✅ Firebase initialized');
+
+// Monitor connection
+db.ref('.info/connected').on('value', snap=>{
+  log(snap.val() ? '🟢 CONNECTED to Firebase' : '🔴 DISCONNECTED');
+});
+
+function doWrite(){
+  log('Writing...');
+  const testData = {
+    vax: { OPV: { openBal: 5 } },
+    sessions: [{
+      date: TODAY,
+      day: 'Wednesday',
+      week: 2,
+      data: { OPV: { due:5, iss:99, adm:4, wst:0, ret:0, disc:0 } },
+      at: new Date().toISOString()
+    }]
+  };
+  db.ref('phc_data/MP Banjara').set(testData)
+    .then(()=>log('✅ WRITE SUCCESS!'))
+    .catch(e=>log('❌ WRITE FAILED: '+e.code+' '+e.message));
+}
+
+function doRead(){
+  log('Reading...');
+  db.ref('phc_data/MP Banjara').once('value', snap=>{
+    const d = snap.val();
+    if(!d){ log('❌ No data found!'); return; }
+    const sessions = Array.isArray(d.sessions) ? d.sessions : Object.values(d.sessions||{});
+    const sess = sessions.find(s=>s.date===TODAY);
+    if(!sess){ log('❌ No session for today! Sessions: '+JSON.stringify(d.sessions)); return; }
+    log('✅ Session found! OPV iss='+sess.data?.OPV?.iss);
+  });
+}
+
+function doDelete(){
+  db.ref('phc_data/MP Banjara').remove()
+    .then(()=>log('✅ Deleted'))
+    .catch(e=>log('❌ '+e.message));
+}
+</script>
+</body>
+</html>
