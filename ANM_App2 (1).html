@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ANM Due Slip — PHC MP Banjara</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="theme-color" content="#0d2a6e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANM PHC">
+<link rel="manifest" href="manifest-anm.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --b1:#0d2a6e;--b2:#1a4fd6;--bl:#e8eeff;--bb:#b0c4ff;
+  --g1:#0a2a14;--g2:#1a5c2a;--g3:#2e7d32;--gl:#e8f5e9;--gb:#a5d6a7;
+  --text:#1a1a2e;--muted:#7a8599;--border:#e0e8f0;--card:#fff;
+  --safe:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#f0f4ff;color:var(--text);min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+.topbar{background:var(--b1);color:#fff;padding:14px 16px calc(14px + var(--safe)) 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.tb-back{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-info{flex:1;min-width:0}
+.tb-title{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sub{font-size:10px;opacity:.7;margin-top:1px}
+.body{flex:1;padding:14px 14px calc(24px + var(--safe));overflow-y:auto}
+.hero{background:linear-gradient(135deg,var(--b1) 0%,var(--b2) 100%);border-radius:18px;padding:18px;color:#fff;margin-bottom:14px}
+.hero-name{font-size:20px;font-weight:900;letter-spacing:-.3px}
+.hero-sub{font-size:11px;opacity:.7;margin-top:3px;margin-bottom:14px}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.hg{background:rgba(255,255,255,.12);border-radius:12px;padding:10px 8px;text-align:center}
+.hg .n{font-size:22px;font-weight:900}
+.hg .l{font-size:9px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 0 8px}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc-card{background:var(--card);border-radius:14px;padding:13px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;active:scale(.97)}
+.sc-card:active{transform:scale(.97)}
+.sc-card.wed{border-left:4px solid var(--g3)}
+.sc-card.sat{border-left:4px solid var(--b2)}
+.sname{font-size:13px;font-weight:800;margin-bottom:2px}
+.sday{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.sc-card.wed .sday{color:var(--g3)}
+.sc-card.sat .sday{color:var(--b2)}
+.sdone{font-size:18px;font-weight:900;color:var(--b2);margin-top:6px}
+.sdone-lbl{font-size:8px;color:var(--muted);font-weight:700}
+/* SC page */
+.sess-bar{background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sess-bar label{font-size:11px;font-weight:700;color:var(--muted)}
+.sess-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;-webkit-appearance:none}
+.site-lbl{font-size:11px;font-weight:700;color:var(--b2);flex:1;text-align:right}
+.reg-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+table.reg{width:100%;border-collapse:collapse;min-width:280px}
+table.reg th{padding:9px 10px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;color:#fff;text-align:center}
+table.reg td{padding:8px 8px;border-bottom:1px solid #edf2ff;font-size:12px;text-align:center;vertical-align:middle}
+table.reg td:first-child{text-align:left;font-weight:700;font-size:11px;padding-left:10px;min-width:90px;position:sticky;left:0;background:#fff;border-right:2px solid var(--border)}
+table.reg tr:nth-child(even) td{background:#f8faff}
+table.reg tr:nth-child(even) td:first-child{background:#f5f7ff}
+.ri{width:68px;border:1.5px solid var(--border);border-radius:8px;padding:7px 6px;font-size:13px;font-family:'DM Mono',monospace;font-weight:500;text-align:center;outline:none;background:#fff;-webkit-appearance:none}
+.ri:focus{border-color:var(--b2);background:#f0f4ff}
+.ri.b{border-color:#90b0ff;background:#f0f4ff;color:var(--b1)}
+.ri.b:focus{border-color:var(--b2);background:#e0eaff}
+.ri.o{border-color:#ffcc80;background:#fffde7;color:#5a3500}
+.ri.o:focus{border-color:#ff9800}
+.c-op{color:var(--g2);font-weight:800;font-family:'DM Mono',monospace}
+.c-done{color:var(--b1);font-weight:800;font-family:'DM Mono',monospace}
+.otag{font-size:7px;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;font-weight:800}
+.oy{background:var(--gl);color:var(--g2)}
+.on2{background:#ffe8e8;color:#b71c1c}
+.btn{width:100%;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:inherit;letter-spacing:.2px}
+.btn-b{background:var(--b2);color:#fff}
+.btn-o{background:#ff9800;color:#fff}
+.brow{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.saved-badge{display:inline-flex;align-items:center;gap:5px;background:var(--gl);color:var(--g2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800;margin-bottom:10px}
+.alert{padding:10px 12px;border-radius:10px;font-size:11px;margin-bottom:10px;border-left:3px solid;line-height:1.5}
+.ab{background:var(--bl);border-color:var(--b2);color:var(--b1)}
+#toast{position:fixed;bottom:calc(20px + var(--safe));left:50%;transform:translateX(-50%) translateY(60px);background:#0d1f4e;color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all .28s;z-index:9999;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.tabs{display:flex;gap:0;background:#e8eeff;border-radius:12px;padding:4px;margin-bottom:12px}
+.tab-btn{flex:1;padding:8px 6px;border:none;background:transparent;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--muted);transition:all .15s}
+.tab-btn.active{background:#fff;color:var(--b1);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.sch-table{width:100%;border-collapse:collapse;font-size:11px}
+.sch-table th{background:var(--b1);color:#fff;padding:8px 10px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.sch-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.sch-table tr:nth-child(even) td{background:#f5f7ff}
+.wk-badge{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.site-chip{display:inline-block;background:var(--bl);color:var(--b1);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin:1px}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="topbar">
+    <div class="tb-info">
+      <div class="tb-title">&#128100; ANM Due Slip Entry</div>
+      <div class="tb-sub" id="home-date"></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="hero">
+      <div class="hero-name">PHC MP Banjara</div>
+      <div class="hero-sub">Enter due counts &amp; doses administered</div>
+      <div class="hero-grid">
+        <div class="hg"><div class="n">13</div><div class="l">Sub Centres</div></div>
+        <div class="hg"><div class="n" id="h-sess">0</div><div class="l">Sessions</div></div>
+        <div class="hg"><div class="n" id="h-due">0</div><div class="l">Due Entered</div></div>
+      </div>
+    </div>
+    <div class="alert ab">&#128161; Select your sub centre and enter the <b>number of beneficiaries due</b> for each vaccine. The Pharmacy Officer will see this and issue accordingly.</div>
+    <div class="sec">Select Your Sub Centre</div>
+    <div class="sc-grid" id="sc-grid"></div>
+  </div>
+</div>
+
+<!-- SC DUE ENTRY -->
+<div class="screen" id="s-sc">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">&#8592;</button>
+    <div class="tb-info">
+      <div class="tb-title" id="sc-title">Sub Centre</div>
+      <div class="tb-sub">ANM v10 — Due Slip Entry</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-reg" onclick="switchTab('reg')">📋 Register</button>
+      <button class="tab-btn" id="tab-sch" onclick="switchTab('sch')">📅 Schedule</button>
+    </div>
+    <div id="pane-reg">
+    <div class="sess-bar">
+      <label>Day</label>
+      <select id="reg-day" onchange="buildDueForm()">
+        <option>Wednesday</option><option>Saturday</option>
+      </select>
+      <label>Week</label>
+      <select id="reg-week" onchange="buildDueForm()">
+        <option value="0">1st</option><option value="1">2nd</option>
+        <option value="2">3rd</option><option value="3">4th</option>
+      </select>
+      <div class="site-lbl" id="reg-site">—</div>
+    </div>
+    <div id="due-saved-badge"></div>
+    <div class="alert ab" style="font-size:10px">
+      &#128100; <b>ANM enters:</b> <b>Due</b> = beneficiaries needing vaccine &nbsp;|&nbsp; <b>Adm</b> = doses actually given during session. Issued column shows what PO sent.
+    </div>
+    <div class="reg-wrap">
+      <table class="reg">
+        <thead>
+          <tr>
+            <th style="background:var(--b1);text-align:left;padding-left:10px">Vaccine</th>
+            <th style="background:#1a5c2a">Op.Bal<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:var(--b2)">Due<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+            <th style="background:#1a5c2a">Issued<br><span style="font-size:8px;opacity:.8">(by PO)</span></th>
+            <th style="background:#5a3500">Adm<br><span style="font-size:8px;opacity:.8">(doses given)</span></th>
+            <th style="background:#1a5c2a">Return<br><span style="font-size:8px;opacity:.8">(doses)</span></th>
+          </tr>
+        </thead>
+        <tbody id="due-body"></tbody>
+      </table>
+    </div>
+    <div class="brow">
+      <button class="btn btn-b" onclick="saveDue()">&#128190; Save Due Slip</button>
+      <button class="btn btn-o" onclick="clearDue()">Clear</button>
+    </div>
+    <div style="height:16px"></div>
+    </div><!-- end pane-reg -->
+    <div id="pane-sch" style="display:none">
+      <div id="sch-body"></div>
+      <div style="height:16px"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══ FIREBASE CONFIG — replace with your own from Firebase Console ═══
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara",
+  storageBucket: "phc-banjara.firebasestorage.app",
+  messagingSenderId: "588369297675",
+  appId: "1:588369297675:web:9265b6db25e5e3cd6ea20e"
+};
+// ════════════════════════════════════════════════════════════════════
+
+// Firebase SDK (loaded dynamically)
+const KEY='phcv5'; // kept for offline fallback
+const VACCINES=['BCG','OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','MR','JE','DPT Booster','TD','Vit-A'];
+const OVP=['OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','JE','DPT Booster','TD','Vit-A'];
+const DPV={'BCG':5,'OPV':20,'fIPV':50,'Hep-B':10,'Pentavalent':10,'RVV':2,'PCV':5,'MR':5,'JE':5,'DPT Booster':10,'TD':10,'Vit-A':1};
+const WKS=['1st Week','2nd Week','3rd Week','4th Week'];
+const SC_LIST=[
+  {name:'Anjanapuram',day:'Wednesday'},{name:'MP Banjara',day:'Wednesday'},
+  {name:'Laxmipuram',day:'Wednesday'},{name:'Gandhi Nagar',day:'Wednesday'},
+  {name:'Burgampadu-2',day:'Wednesday'},{name:'Sarapaka',day:'Wednesday'},
+  {name:'Muthyalampeta',day:'Wednesday'},{name:'SR Palem',day:'Saturday'},
+  {name:'Burgampadu-1',day:'Saturday'},{name:'NN Prolu',day:'Saturday'},
+  {name:'Iravendi',day:'Saturday'},{name:'Krishna Sagar',day:'Saturday'},
+  {name:'Tekulachervu',day:'Saturday'},
+];
+const SCH={
+  'Anjanapuram':{wed:['SC Anjanapuram','AWC Anjanapuram-1','AWC Anjanapuram-2','Anjanapuram SC'],sat:['Sompalli','-','G.G. Palli','Buddagudem']},
+  'MP Banjara':{wed:['SC Colony-1','Bestabazar MPB','SC Colony-1','Bestabazar MPB'],sat:['Temple Area','KCR Colony','-','Jinkalagudem']},
+  'Laxmipuram':{wed:['Laxmipuram SC','Laxmipuram-2','Laxmipuram SC','Marrikunta'],sat:['Vepalagadda Laxmi','Polavaram Laxmi','Laxmipuram-3','-']},
+  'Gandhi Nagar':{wed:['AWC Vijayanagaram','Gandhinagar SC','AWC Gandhinagar-2','Bhaskarnagar'],sat:['Srirampuram','Rajeevnagar','Odiyacamp','-']},
+  'Burgampadu-2':{wed:['BPD-2 SC','Rice Mill Area','Mudiraj Bazar','Burgampadu-II'],sat:['Old Sarapaka','Old Sarapaka','Old Sarapaka','-']},
+  'Sarapaka':{wed:['Sundaraiah Nagar','Conductors Colony','Sub-Centre','Conductors Colony'],sat:['Basappa Camp','Masjid Area','G.P.O Area','-']},
+  'Muthyalampeta':{wed:['Mutyalampeta SC','Mutyalampeta SC','East Gate','-'],sat:['East Gate','Ricksha Colony','Mede Colony','Pragathi Area']},
+  'SR Palem':{wed:['SR Palem','Reddypalem-2','SC Gowtapuram','Gowthapuram School'],sat:['SC Colony Gowthapuram','School Area','Reddypalem-2','-']},
+  'Burgampadu-1':{wed:['Ramalayam SC','-','-','-'],sat:['AWC SC Colony-1','SC Colony-2','AWC SC Colony-1','AWC SC Colony-2']},
+  'NN Prolu':{wed:['NNProlu SC Colony','Gommuru','SC Colony-1','NN Prolu SC'],sat:['ST Colony','NNP Sub-Centre','BC Colony NNP','-']},
+  'Iravendi':{wed:['Koyagudem','Iravendi SC','Iravendi SC','Thallagommuru'],sat:['Chintakunta','Mothe','Godaramma Colony','-']},
+  'Krishna Sagar':{wed:['Devaiah Gumpu','SC Colony KSR','Singaram','S. Ramapuram'],sat:['Musalama Illugo','ST Colony & Urladosapadu','Bathulanagar','-']},
+  'Tekulachervu':{wed:['Tekulachervu','Yeddulachervu','Tekulachervu','Gopalapuram'],sat:['Nakiripeta','Woodyard Colony','-','Kothuruthanda']},
+};
+const TODAY=new Date(),TSTR=TODAY.toISOString().split('T')[0],DOW=TODAY.getDay();
+function blankSC(){const d={vax:{},sessions:[]};VACCINES.forEach(v=>{d.vax[v]={openBal:0};});return d;}
+let DB={};
+let firebaseDB=null;
+let firebaseReady=false;
+
+// Load from localStorage immediately (offline-first)
+try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
+SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+
+// Init Firebase
+function initFirebase(){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    firebaseDB=firebase.database();
+    firebaseReady=true; // Set ready immediately
+
+    // Step 1: Load full DB once on startup
+    firebaseDB.ref('phc_data').once('value', snap=>{
+      const data=snap.val();
+      if(data){
+        DB=data;
+        SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
+      firebaseReady=true;
+      dbg('✅ Firebase loaded. SCs: '+Object.keys(data||{}).length);
+      buildDash();
+      showSyncStatus('🟢 Synced');
+    });
+
+    // Step 2: Listen for ANY changes to individual SCs
+    // Listen for any change to full DB
+    firebaseDB.ref('phc_data').on('value', snap=>{
+      const data=snap.val();
+      if(data){
+        // Merge: only update SCs that exist in Firebase
+        Object.keys(data).forEach(scName=>{ DB[scName]=data[scName]; });
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
+      showSyncStatus('🟢 Synced');
+      // Show what MP Banjara iss value is
+      const mpB=data&&data['MP Banjara'];
+      const sess=mpB&&mpB.sessions&&mpB.sessions.find(s=>s.date===TSTR);
+      const opvIss=sess&&sess.data&&sess.data['OPV']&&sess.data['OPV'].iss;
+      toast('Firebase: OPV iss='+( opvIss||'none'));
+      const scScreen=document.getElementById('s-sc');
+      if(scScreen.classList.contains('active') && SC_LIST[CUR]){
+        buildDueForm();
+      } else {
+        buildDash();
+      }
+    });
+
+    // Step 3: Watch connection state
+    firebaseDB.ref('.info/connected').on('value', snap=>{
+      if(!snap.val()) showSyncStatus('🔴 Offline');
+    });
+
+  } catch(e){
+    console.warn('Firebase error',e);
+    showSyncStatus('🔴 Error: '+e.message);
+    firebaseReady=false;
+  }
+}
+
+
+function showSyncStatus(msg){
+  let el=document.getElementById('sync-status');
+  if(!el){
+    el=document.createElement('div');
+    el.id='sync-status';
+    el.style.cssText='position:fixed;top:8px;right:10px;font-size:9px;font-weight:800;color:#fff;opacity:.85;z-index:9999;pointer-events:none';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+}
+
+
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  const curSC=CUR!=null?SC_LIST[CUR]:null;
+  if(!curSC) return;
+  function doWrite(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+curSC.name).set(DB[curSC.name])
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      showSyncStatus('⏳ Saving...');
+      setTimeout(doWrite, 2000);
+    }
+  }
+  doWrite();
+}
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+
+let CUR=0;
+
+function goHome(){
+  document.getElementById('s-sc').classList.remove('active');
+  document.getElementById('s-home').classList.add('active');
+  buildDash();window.scrollTo(0,0);
+}
+
+function buildDash(){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('home-date').textContent=days[DOW]+' — '+TODAY.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  let totSess=0,totDue=0;
+  SC_LIST.forEach(sc=>{
+    const d=DB[sc.name]||blankSC();
+    totSess+=(d.sessions||[]).length;
+    (d.sessions||[]).forEach(s=>{VACCINES.forEach(v=>{totDue+=(s.data?.[v]?.due||0);});});
+  });
+  document.getElementById('h-sess').textContent=totSess;
+  document.getElementById('h-due').textContent=totDue;
+  document.getElementById('sc-grid').innerHTML=SC_LIST.map((sc,i)=>{
+    const d=DB[sc.name]||blankSC();
+    const cls=sc.day==='Wednesday'?'wed':'sat';
+    // Count today's due entries
+    const todaySess=(d.sessions||[]).find(s=>s.date===TSTR);
+    let dueCount=0;
+    if(todaySess) VACCINES.forEach(v=>{dueCount+=(todaySess.data?.[v]?.due||0);});
+    const hasDue=dueCount>0;
+    return '<div class="sc-card '+cls+'" onclick="openSC('+i+')">'+
+      '<div class="sname">'+sc.name+'</div>'+
+      '<div class="sday">'+sc.day+'</div>'+
+      (hasDue
+        ?'<div class="sdone">'+dueCount+'</div><div class="sdone-lbl">dues today</div>'
+        :'<div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic">Tap to enter due</div>'
+      )+
+    '</div>';
+  }).join('');
+}
+
+function openSC(i){
+  CUR=i;
+  const sc=SC_LIST[i];
+  document.getElementById('sc-title').textContent=sc.name;
+  const sd=DOW===3?'Wednesday':DOW===6?'Saturday':sc.day;
+  document.getElementById('reg-day').value=sd;
+  document.getElementById('reg-week').value=Math.min(Math.ceil(TODAY.getDate()/7),4)-1;
+  buildDueForm();
+  document.getElementById('s-home').classList.remove('active');
+  document.getElementById('s-sc').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function buildDueForm(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const sch=SCH[sc.name];
+  const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
+  document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
+  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
+  const badge=document.getElementById('due-saved-badge');
+  badge.innerHTML=saved?'<div class="saved-badge">&#10003; Due slip saved for today</div>':'';
+  document.getElementById('due-body').innerHTML=VACCINES.map(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const isOVP=OVP.includes(v);
+    const sv=saved?saved.data[v]||{}:{};
+    const due=sv.due||0;
+    const iss=sv.iss||0; // Issued by PO — read only
+    const tag='<span class="otag '+(isOVP?'oy':'on2')+'">'+(isOVP?'OVP':'DISC')+'</span>';
+    const adm=sv.adm||0;
+    const opDoses=isOVP?(d.vax[v]?.openBal||0):0;
+    const ret=(opDoses+iss)>0?Math.max(opDoses+iss-adm,0):0;
+    return '<tr>'+
+      '<td>'+v+tag+'</td>'+
+      '<td class="c-op">'+(isOVP?(opDoses||'—'):'—')+'</td>'+
+      '<td><input class="ri b" type="number" min="0" placeholder="0" id="due_'+k+'" value="'+(due||'')+'" inputmode="numeric"></td>'+
+      '<td class="c-done">'+(iss||'—')+'</td>'+
+      '<td><input class="ri o" type="number" min="0" placeholder="0" id="adm_'+k+'"'+
+        ' value="'+(adm||'')+'" data-iss="'+iss+'" data-op="'+opDoses+'" data-k="'+k+'" data-v="'+v+'"'+
+        ' data-v="'+v+'" oninput="liveRet(this)" inputmode="numeric"></td>'+
+      '<td class="c-done" id="ret_'+k+'">'+(isOVP?((opDoses+iss)>0?ret:'—'):(iss>0?Math.max(iss-(adm>0?Math.ceil(adm/DPV[v])*DPV[v]:0),0):'—'))+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function liveRet(inp){
+  const k=inp.dataset.k;
+  const v=inp.dataset.v;
+  const isOVP=OVP.includes(v);
+  const iss=parseInt(inp.dataset.iss)||0;
+  const op=parseInt(inp.dataset.op)||0;
+  const adm=parseInt(inp.value)||0;
+  const dpv=DPV[v]||10;
+  const retEl=document.getElementById('ret_'+k);
+  if(!retEl) return;
+  if(isOVP){
+    const total=op+iss;
+    retEl.textContent=total>0?Math.max(total-adm,0):'—';
+  } else {
+    // BCG/MR: return unopened vials only
+    const openedVials=adm>0?Math.ceil(adm/dpv)*dpv:0;
+    retEl.textContent=iss>0?Math.max(iss-openedVials,0):'—';
+  }
+}
+
+function saveDue(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const day=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  let any=false;const dueData={};
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const due=parseInt(document.getElementById('due_'+k)?.value)||0;
+    if(due>0){dueData[v]=due;any=true;}
+  });
+  // Collect adm values
+  const admData={};
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    if(adm>0) admData[v]=adm;
+  });
+  if(!any&&!Object.keys(admData).length){toast('Enter at least one value');return;}
+  if(!d.sessions)d.sessions=[];
+  const ei=d.sessions.findIndex(s=>s.date===TSTR);
+  if(ei>=0){
+    // Merge — keep PO's iss/wst/disc, update due, adm and auto-calc ret
+    VACCINES.forEach(v=>{
+      if(!d.sessions[ei].data[v]) d.sessions[ei].data[v]={};
+      const iss=d.sessions[ei].data[v].iss||0;
+      const adm=admData[v]||0;
+      const wst=d.sessions[ei].data[v].wst||0;
+      const opD=d.vax[v]?.openBal||0;
+      const ret=(opD+iss)>0?Math.max(opD+iss-adm,0):0;
+      d.sessions[ei].data[v].due=dueData[v]||0;
+      d.sessions[ei].data[v].adm=adm;
+      d.sessions[ei].data[v].ret=ret; // auto-calculated return
+    });
+  } else {
+    // No existing session — create new but check Firebase for any PO data
+    const data={};
+    VACCINES.forEach(v=>{
+      const adm=admData[v]||0;
+      // Keep any PO data already in DB from Firebase sync
+      const existInDB=(DB[sc.name]?.sessions||[]).find(s=>s.date===TSTR);
+      const existV=existInDB?existInDB.data[v]||{}:{};
+      data[v]={
+        due:dueData[v]||0,
+        iss:existV.iss||0,      // preserve PO issued
+        adm,
+        wst:existV.wst||0,     // preserve PO wasted
+        ret:existV.ret||0,
+        disc:existV.disc||0
+      };
+    });
+    d.sessions.push({date:TSTR,day,week:wk,data,at:new Date().toISOString()});
+  }
+  DB[sc.name]=d;
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  function writeToFirebase(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(DB[sc.name])
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      showSyncStatus('⏳ Saving...');
+      setTimeout(writeToFirebase, 1000);
+    }
+  }
+  writeToFirebase();
+  buildDueForm();
+  toast('✅ Saved — syncing to Firebase');
+}
+
+function clearDue(){
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    ['due_','adm_'].forEach(p=>{const el=document.getElementById(p+k);if(el)el.value='';});
+  });
+  toast('Cleared');
+}
+
+function switchTab(t){
+  ['reg','sch'].forEach(n=>{
+    document.getElementById('pane-'+n).style.display=n===t?'block':'none';
+    document.getElementById('tab-'+n).classList.toggle('active',n===t);
+  });
+  if(t==='sch') buildScheduleTab();
+}
+
+function buildScheduleTab(){
+  const sc=SC_LIST[CUR];
+  const sch=SCH[sc.name];
+  if(!sch){document.getElementById('sch-body').innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">No schedule found</p>';return;}
+  let html='<div class="sec">Monthly Session Schedule — '+sc.name+'</div>';
+  html+='<div class="reg-wrap"><table class="sch-table">';
+  html+='<tr><th>Week</th><th>Wednesday Site</th><th>Saturday Site</th></tr>';
+  for(let w=0;w<4;w++){
+    const wsite=sch.wed[w]||'-';
+    const ssite=sch.sat[w]||'-';
+    html+='<tr>'+
+      '<td><span class="wk-badge">'+WKS[w]+'</span></td>'+
+      '<td><span class="site-chip">'+wsite+'</span></td>'+
+      '<td><span class="site-chip">'+ssite+'</span></td>'+
+    '</tr>';
+  }
+  html+='</table></div>';
+  document.getElementById('sch-body').innerHTML=html;
+}
+
+// Load Firebase SDK then init
+(function loadFirebase(){
+  const s1=document.createElement('script');
+  s1.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
+  s1.onload=function(){
+    const s2=document.createElement('script');
+    s2.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js';
+    s2.onload=initFirebase;
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+})();
+
+// Service worker disabled - causes caching issues
+// PWA install still works without SW registration
+
+// Init
+buildDash();
+document.getElementById('home-date').textContent=
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][DOW]+' — '+TODAY.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+</script>
+</body>
+</html>
