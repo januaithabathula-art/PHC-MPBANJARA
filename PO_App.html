@@ -588,12 +588,22 @@ function saveAll(){
   const rec={date:TSTR,day,week:wk,data,at:new Date().toISOString()};
   if(ei>=0)d.sessions[ei]=rec;else d.sessions.push(rec);
   DB[sc.name]=d;
-  // Diagnostic: show what we're saving
-  const testSess=(DB[sc.name].sessions||[]).find(s=>s.date===TSTR);
-  const testIss=testSess&&testSess.data['OPV']&&testSess.data['OPV'].iss;
-  save();
+  // Save to localStorage
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  // Write directly to Firebase - don't wait for SDK, retry if needed
+  function writeToFirebase(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(d)
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      showSyncStatus('⏳ Saving...');
+      setTimeout(writeToFirebase, 1000);
+    }
+  }
+  writeToFirebase();
   buildRegister();
-  toast('✅ Saved OPV iss='+testIss+' date='+TSTR);
+  toast('✅ Saved & syncing to Firebase');
 }
 
 function clearAll(){

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firebase Data Check</title>
+<style>
+body{font-family:monospace;padding:15px;font-size:12px}
+pre{background:#f0f0f0;padding:10px;border-radius:8px;overflow-x:auto;white-space:pre-wrap}
+button{background:#1a5c2a;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-size:14px;margin:5px;cursor:pointer;width:100%}
+h3{color:#333}
+</style>
+</head>
+<body>
+<h3>🔥 Firebase MP Banjara Data</h3>
+<button onclick="loadData()">📥 Load MP Banjara Data</button>
+<button onclick="clearData()">🗑️ Clear Today Session</button>
+<div id="out"><p>Click button to load...</p></div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara"
+};
+const TODAY = new Date().toISOString().split('T')[0];
+let db;
+
+function log(html){ document.getElementById('out').innerHTML = html; }
+
+const s1=document.createElement('script');
+s1.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
+s1.onload=()=>{
+  const s2=document.createElement('script');
+  s2.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js';
+  s2.onload=()=>{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.database();
+    log('<p>✅ Firebase ready. Click button.</p>');
+  };
+  document.head.appendChild(s2);
+};
+document.head.appendChild(s1);
+
+function loadData(){
+  if(!db){log('<p>Firebase not ready</p>');return;}
+  log('<p>Loading...</p>');
+  db.ref('phc_data/MP Banjara').once('value', snap=>{
+    const d = snap.val();
+    if(!d){log('<p>❌ No data for MP Banjara in Firebase!</p>');return;}
+    
+    const sess = (d.sessions||[]).find(s=>s.date===TODAY);
+    let html = '<h3>Today: '+TODAY+'</h3>';
+    
+    if(!sess){
+      html += '<p>❌ No session for today!</p>';
+    } else {
+      html += '<p>✅ Session found</p>';
+      html += '<p>Date: '+sess.date+'</p>';
+      html += '<h3>Vaccine data:</h3>';
+      html += '<table border=1 style="border-collapse:collapse;font-size:11px">';
+      html += '<tr><th>Vaccine</th><th>due</th><th>iss</th><th>adm</th></tr>';
+      ['BCG','OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','MR','JE','DPT Booster','TD','Vit-A'].forEach(v=>{
+        const vd = sess.data&&sess.data[v]||{};
+        html += '<tr><td>'+v+'</td><td>'+(vd.due||0)+'</td><td style="background:'+(vd.iss>0?'#c8e6c9':'#ffcdd2')+'">'+(vd.iss||0)+'</td><td>'+(vd.adm||0)+'</td></tr>';
+      });
+      html += '</table>';
+    }
+    log(html);
+  });
+}
+
+function clearData(){
+  if(!db){log('<p>Firebase not ready</p>');return;}
+  // Delete entire MP Banjara node so PO starts completely fresh
+  db.ref('phc_data/MP Banjara').remove()
+    .then(()=>log('<p>✅ MP Banjara data cleared. Now test fresh.</p>'))
+    .catch(e=>log('<p>❌ Error: '+e.message+'</p>'));
+}
+</script>
+</body>
+</html>

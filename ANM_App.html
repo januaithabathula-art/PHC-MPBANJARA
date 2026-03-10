@@ -480,9 +480,21 @@ function saveDue(){
     });
     d.sessions.push({date:TSTR,day,week:wk,data,at:new Date().toISOString()});
   }
-  DB[sc.name]=d;save();
+  DB[sc.name]=d;
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  function writeToFirebase(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(DB[sc.name])
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      showSyncStatus('⏳ Saving...');
+      setTimeout(writeToFirebase, 1000);
+    }
+  }
+  writeToFirebase();
   buildDueForm();
-  toast('✅ Saved — return doses updated in PO app');
+  toast('✅ Saved — syncing to Firebase');
 }
 
 function clearDue(){
