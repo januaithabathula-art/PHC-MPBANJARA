@@ -358,7 +358,7 @@ function buildDash(){
     const d=DB[sc.name]||blankSC();
     const cls=sc.day==='Wednesday'?'wed':'sat';
     // Count today's due entries
-    const todaySess=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+    const todaySess=(d.sessions||[]).find(s=>s.date===getSelectedDate());
     let dueCount=0;
     if(todaySess) VACCINES.forEach(v=>{dueCount+=(todaySess.data?.[v]?.due||0);});
     const hasDue=dueCount>0;
@@ -402,7 +402,7 @@ function buildDueForm(){
   let dateBadge=document.getElementById('session-date-badge');
   if(!dateBadge){dateBadge=document.createElement('div');dateBadge.id='session-date-badge';dateBadge.style.cssText='background:#1a5c2a;color:#fff;text-align:center;padding:8px;font-size:15px;font-weight:800;border-radius:10px;margin:8px 0';const sb=document.querySelector('.sess-bar');if(sb)sb.insertAdjacentElement('afterend',dateBadge);}
   dateBadge.textContent='📅 '+sc.day+' — '+fmtDate(getSelectedDate());
-  const saved=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
   const badge=document.getElementById('due-saved-badge');
   badge.innerHTML=saved?'<div class="saved-badge">&#10003; Due slip saved for today</div>':'';
   document.getElementById('due-body').innerHTML=VACCINES.map(v=>{

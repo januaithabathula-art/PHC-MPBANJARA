@@ -436,7 +436,7 @@ function buildDash(){
   document.getElementById('sc-grid').innerHTML=SC_LIST.map((sc,i)=>{
     const d=DB[sc.name]||blankSC();
     const cls=sc.day==='Wednesday'?'wed':'sat';
-    const todaySess=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+    const todaySess=(d.sessions||[]).find(s=>s.date===getSelectedDate());
     let dueCount=0,issCount=0;
     if(todaySess){
       VACCINES.forEach(v=>{
@@ -481,7 +481,7 @@ function buildRegister(){
   let dateBadge=document.getElementById('session-date-badge');
   if(!dateBadge){dateBadge=document.createElement('div');dateBadge.id='session-date-badge';dateBadge.style.cssText='background:#1a5c2a;color:#fff;text-align:center;padding:8px;font-size:15px;font-weight:800;border-radius:10px;margin:8px 0';const sb=document.querySelector('.sess-bar');if(sb)sb.insertAdjacentElement('afterend',dateBadge);}
   dateBadge.textContent='📅 '+sc.day+' — '+fmtDate(getSelectedDate());
-  const saved=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
     document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
     const k=v.replace(/[^a-z0-9]/gi,'_');
     const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
@@ -586,7 +586,7 @@ function saveAll(){
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
   let any=false;const newOpenDoses={};
-  const ei=d.sessions?d.sessions.findIndex(s=>s.date===getScDate(sc)):-1;
+  const ei=d.sessions?d.sessions.findIndex(s=>s.date===getSelectedDate()):-1;
   const existingData=ei>=0?d.sessions[ei].data:{};
   const data={};
   VACCINES.forEach(v=>{
@@ -645,7 +645,7 @@ function clearAll(){
   const wk=parseInt(document.getElementById('reg-week').value||0);
   // Only clear PO fields — keep ANM due intact
   if(d.sessions){
-    const ei=d.sessions.findIndex(s=>s.date===TSTR);
+    const ei=d.sessions.findIndex(s=>s.date===getSelectedDate());
     if(ei>=0){
       VACCINES.forEach(v=>{
         if(d.sessions[ei].data[v]){
@@ -712,7 +712,7 @@ function syncANMAdm(){
   const d=DB[sc.name]||blankSC();
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
-  const saved=(d.sessions||[]).find(s=>s.date===getScDate(sc));
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
   if(!saved) return;
   let updated=false;
   VACCINES.forEach(v=>{
