@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Date Test</title>
+<style>
+body{font-family:sans-serif;padding:20px;background:#f0f4f8}
+.box{background:#fff;border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+h3{margin:0 0 8px;color:#1a5c2a}
+.date{font-size:22px;font-weight:800;color:#333}
+.sub{font-size:13px;color:#666;margin-top:4px}
+button{background:#1a5c2a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;margin:4px;cursor:pointer}
+select{padding:8px;font-size:14px;border-radius:8px;border:1px solid #ccc;margin:4px}
+</style>
+</head>
+<body>
+<h2>📅 Date Function Test</h2>
+<div class="box">
+<h3>Today</h3>
+<div class="date" id="today"></div>
+</div>
+
+<div class="box">
+<h3>All Wednesdays this month</h3>
+<div id="weds"></div>
+</div>
+
+<div class="box">
+<h3>All Saturdays this month</h3>
+<div id="sats"></div>
+</div>
+
+<div class="box">
+<h3>Select Week</h3>
+<select id="wk" onchange="testWeek()">
+  <option value="1">1st Week</option>
+  <option value="2" selected>2nd Week</option>
+  <option value="3">3rd Week</option>
+  <option value="4">4th Week</option>
+</select>
+<div class="date" id="wed-result" style="color:#1a5c2a"></div>
+<div class="sub">Wednesday date for selected week</div>
+<div class="date" id="sat-result" style="color:#b45309"></div>
+<div class="sub">Saturday date for selected week</div>
+</div>
+
+<script>
+function todayYMD(){
+  const n=new Date();
+  const y=n.getFullYear();
+  const m=String(n.getMonth()+1).padStart(2,'0');
+  const d=String(n.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+d;
+}
+
+function getNthWeekday(weekday, n){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),1);
+  let count=0;
+  while(d.getMonth()===now.getMonth()){
+    if(d.getDay()===weekday){
+      count++;
+      if(count===n){
+        const y=d.getFullYear();
+        const mo=String(d.getMonth()+1).padStart(2,'0');
+        const dy=String(d.getDate()).padStart(2,'0');
+        return y+'-'+mo+'-'+dy;
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+
+function fmtDate(dateStr){
+  if(!dateStr) return 'NOT FOUND';
+  const d=new Date(dateStr+'T00:00:00');
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+mo[d.getMonth()]+' '+d.getFullYear();
+}
+
+function testWeek(){
+  const n = parseInt(document.getElementById('wk').value);
+  const wed = getNthWeekday(3, n);
+  const sat = getNthWeekday(6, n);
+  document.getElementById('wed-result').textContent = 'Wednesday: ' + fmtDate(wed) + ' (' + (wed||'null') + ')';
+  document.getElementById('sat-result').textContent = 'Saturday: ' + fmtDate(sat) + ' (' + (sat||'null') + ')';
+}
+
+// Init
+const today = todayYMD();
+document.getElementById('today').textContent = fmtDate(today) + ' (' + today + ')';
+
+let whtml='', shtml='';
+for(let i=1;i<=4;i++){
+  const w=getNthWeekday(3,i);
+  const s=getNthWeekday(6,i);
+  whtml += '<div>Week '+i+': <b>'+fmtDate(w)+'</b> ('+w+')</div>';
+  shtml += '<div>Week '+i+': <b>'+fmtDate(s)+'</b> ('+s+')</div>';
+}
+document.getElementById('weds').innerHTML=whtml;
+document.getElementById('sats').innerHTML=shtml;
+testWeek();
+</script>
+</body>
+</html>
