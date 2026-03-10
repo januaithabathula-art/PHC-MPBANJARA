@@ -93,6 +93,8 @@ table.reg tr:nth-child(even) td:first-child{background:#f5f7ff}
 .wk-badge{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .site-chip{display:inline-block;background:var(--bl);color:var(--b1);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin:1px}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -100,7 +102,10 @@ table.reg tr:nth-child(even) td:first-child{background:#f5f7ff}
 <div class="screen active" id="s-home">
   <div class="topbar">
     <div class="tb-info">
-      <div class="tb-title">&#128100; ANM Due Slip Entry</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="tb-title">&#128100; ANM Due Slip Entry</div>
+        <span id="sync-status" style="font-size:10px;font-weight:800;color:#fff;opacity:.9;margin-left:8px">⏳</span>
+      </div>
       <div class="tb-sub" id="home-date"></div>
     </div>
   </div>
@@ -235,9 +240,63 @@ try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
 SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
 
 // Init Firebase
+
+// Fix Firebase array->object conversion
+function normalizeDB(data){
+  if(!data) return data;
+  Object.keys(data).forEach(scName=>{
+    const sc = data[scName];
+    if(sc && sc.sessions && !Array.isArray(sc.sessions)){
+      sc.sessions = Object.values(sc.sessions);
+    }
+  });
+  return data;
+}
+
+
+// ═══ SESSION DATE FUNCTIONS ═══
+function todayYMD(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+function getNthWeekday(weekday,n){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),1);
+  let count=0;
+  while(d.getMonth()===now.getMonth()){
+    if(d.getDay()===weekday){count++;if(count===n){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}}
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+function getWeekNum(dateStr){
+  if(!dateStr)return 1;
+  const target=new Date(dateStr+'T00:00:00'),dow=target.getDay();
+  const d=new Date(target.getFullYear(),target.getMonth(),1);
+  let count=0;
+  while(d<=target){if(d.getDay()===dow)count++;d.setDate(d.getDate()+1);}
+  return count||1;
+}
+function getScDate(sc){
+  const dow=sc.day==='Wednesday'?3:6,today=todayYMD();
+  for(let n=1;n<=4;n++){const d=getNthWeekday(dow,n);if(d&&d>=today)return d;}
+  return getNthWeekday(dow,4)||today;
+}
+function getSelectedDate(){
+  const sc=CUR!=null?SC_LIST[CUR]:null;
+  if(!sc)return todayYMD();
+  const wk=parseInt(document.getElementById('reg-week')?.value||0)+1;
+  return getNthWeekday(sc.day==='Wednesday'?3:6,wk)||todayYMD();
+}
+function fmtDate(dateStr){
+  if(!dateStr)return '';
+  const d=new Date(dateStr+'T00:00:00'),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+mo[d.getMonth()]+' '+d.getFullYear();
+}
+
 function initFirebase(){
   try{
-    firebase.initializeApp(FIREBASE_CONFIG);
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
     firebaseReady=true; // Set ready immediately
 
@@ -245,6 +304,7 @@ function initFirebase(){
     firebaseDB.ref('phc_data').once('value', snap=>{
       const data=snap.val();
       if(data){
+        normalizeDB(data);
         DB=data;
         SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -260,6 +320,7 @@ function initFirebase(){
     firebaseDB.ref('phc_data').on('value', snap=>{
       const data=snap.val();
       if(data){
+        normalizeDB(data);
         // Merge: only update SCs that exist in Firebase
         Object.keys(data).forEach(scName=>{ DB[scName]=data[scName]; });
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -267,7 +328,7 @@ function initFirebase(){
       showSyncStatus('🟢 Synced');
       // Show what MP Banjara iss value is
       const mpB=data&&data['MP Banjara'];
-      const sess=mpB&&mpB.sessions&&mpB.sessions.find(s=>s.date===TSTR);
+      const sess=mpB&&mpB.sessions&&mpB.sessions.find(s=>s.date===getSelectedDate());
       const opvIss=sess&&sess.data&&sess.data['OPV']&&sess.data['OPV'].iss;
       toast('Firebase: OPV iss='+( opvIss||'none'));
       const scScreen=document.getElementById('s-sc');
@@ -292,14 +353,8 @@ function initFirebase(){
 
 
 function showSyncStatus(msg){
-  let el=document.getElementById('sync-status');
-  if(!el){
-    el=document.createElement('div');
-    el.id='sync-status';
-    el.style.cssText='position:fixed;top:8px;right:10px;font-size:9px;font-weight:800;color:#fff;opacity:.85;z-index:9999;pointer-events:none';
-    document.body.appendChild(el);
-  }
-  el.textContent=msg;
+  const el=document.getElementById('sync-status');
+  if(el) el.textContent=msg;
 }
 
 
@@ -345,7 +400,7 @@ function buildDash(){
     const d=DB[sc.name]||blankSC();
     const cls=sc.day==='Wednesday'?'wed':'sat';
     // Count today's due entries
-    const todaySess=(d.sessions||[]).find(s=>s.date===TSTR);
+    const todaySess=(d.sessions||[]).find(s=>s.date===getScDate(sc));
     let dueCount=0;
     if(todaySess) VACCINES.forEach(v=>{dueCount+=(todaySess.data?.[v]?.due||0);});
     const hasDue=dueCount>0;
@@ -364,9 +419,8 @@ function openSC(i){
   CUR=i;
   const sc=SC_LIST[i];
   document.getElementById('sc-title').textContent=sc.name;
-  const sd=DOW===3?'Wednesday':DOW===6?'Saturday':sc.day;
-  document.getElementById('reg-day').value=sd;
-  document.getElementById('reg-week').value=Math.min(Math.ceil(TODAY.getDate()/7),4)-1;
+  document.getElementById('reg-day').value=sc.day;
+  document.getElementById('reg-week').value=getWeekNum(getScDate(sc))-1;
   buildDueForm();
   document.getElementById('s-home').classList.remove('active');
   document.getElementById('s-sc').classList.add('active');
@@ -380,8 +434,13 @@ function buildDueForm(){
   const wk=parseInt(document.getElementById('reg-week').value||0);
   const sch=SCH[sc.name];
   const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
-  document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
-  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
+  document.getElementById('reg-site').textContent=WKS[wk]+' '+sc.day+' — '+site;
+  // Date badge
+  let _db=document.getElementById('sess-date-lbl');
+  if(!_db){_db=document.createElement('div');_db.id='sess-date-lbl';_db.style.cssText='background:#1a5c2a;color:#fff;padding:7px 12px;border-radius:10px;text-align:center;font-size:14px;font-weight:800;margin:8px 0';
+  const _sb=document.getElementById('reg-site');if(_sb&&_sb.parentNode)_sb.parentNode.insertAdjacentElement('afterend',_db);}
+  _db.textContent='📅 Session: '+fmtDate(getSelectedDate());
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
   const badge=document.getElementById('due-saved-badge');
   badge.innerHTML=saved?'<div class="saved-badge">&#10003; Due slip saved for today</div>':'';
   document.getElementById('due-body').innerHTML=VACCINES.map(v=>{
@@ -447,7 +506,7 @@ function saveDue(){
   });
   if(!any&&!Object.keys(admData).length){toast('Enter at least one value');return;}
   if(!d.sessions)d.sessions=[];
-  const ei=d.sessions.findIndex(s=>s.date===TSTR);
+  const ei=d.sessions.findIndex(s=>s.date===getSelectedDate());
   if(ei>=0){
     // Merge — keep PO's iss/wst/disc, update due, adm and auto-calc ret
     VACCINES.forEach(v=>{
@@ -467,7 +526,7 @@ function saveDue(){
     VACCINES.forEach(v=>{
       const adm=admData[v]||0;
       // Keep any PO data already in DB from Firebase sync
-      const existInDB=(DB[sc.name]?.sessions||[]).find(s=>s.date===TSTR);
+      const existInDB=(DB[sc.name]?.sessions||[]).find(s=>s.date===getSelectedDate());
       const existV=existInDB?existInDB.data[v]||{}:{};
       data[v]={
         due:dueData[v]||0,
@@ -478,7 +537,7 @@ function saveDue(){
         disc:existV.disc||0
       };
     });
-    d.sessions.push({date:TSTR,day,week:wk,data,at:new Date().toISOString()});
+    d.sessions.push({date:getSelectedDate(),day,week:wk,data,at:new Date().toISOString()});
   }
   DB[sc.name]=d;
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
