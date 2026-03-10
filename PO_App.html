@@ -376,15 +376,20 @@ function showSyncStatus(msg){
 
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
-  if(firebaseDB&&firebaseReady){
-    const curSC=CUR!=null?SC_LIST[CUR]:null;
-    if(curSC&&DB[curSC.name]){
-      // Write just this SC's data to Firebase
+  const curSC=CUR!=null?SC_LIST[CUR]:null;
+  if(!curSC) return;
+  function doWrite(){
+    if(firebaseDB){
       firebaseDB.ref('phc_data/'+curSC.name).set(DB[curSC.name])
-        .then(()=>{showSyncStatus('🟢 Synced');dbg('✅ Write OK');})
-        .catch(e=>{showSyncStatus('🔴 '+e.code);dbg('❌ ERROR: '+e.code)});
+        .then(()=>showSyncStatus('🟢 Synced'))
+        .catch(e=>showSyncStatus('🔴 '+e.code));
+    } else {
+      // Firebase not ready yet - retry after 2 seconds
+      showSyncStatus('⏳ Saving...');
+      setTimeout(doWrite, 2000);
     }
   }
+  doWrite();
 }
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
