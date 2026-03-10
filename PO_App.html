@@ -120,6 +120,8 @@ table.rpt tfoot td.sc-name{background:#3a0000;color:#fff;font-family:'DM Sans',s
 .mon-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;outline:none}
 .wa-btn{background:#25d366;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -127,7 +129,10 @@ table.rpt tfoot td.sc-name{background:#3a0000;color:#fff;font-family:'DM Sans',s
 <div class="screen active" id="s-home">
   <div class="topbar">
     <div class="tb-info">
-      <div class="tb-title">&#128084; PO Vaccine Register</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="tb-title">&#128084; PO Vaccine Register</div>
+        <span id="sync-status" style="font-size:10px;font-weight:800;color:#fff;opacity:.9;margin-left:8px">⏳</span>
+      </div>
       <div class="tb-sub" id="home-date"></div>
     </div>
   </div>
@@ -300,9 +305,63 @@ let firebaseReady=false;
 try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
 SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
 
+
+// Fix Firebase array->object conversion
+function normalizeDB(data){
+  if(!data) return data;
+  Object.keys(data).forEach(scName=>{
+    const sc = data[scName];
+    if(sc && sc.sessions && !Array.isArray(sc.sessions)){
+      sc.sessions = Object.values(sc.sessions);
+    }
+  });
+  return data;
+}
+
+
+// ═══ SESSION DATE FUNCTIONS ═══
+function todayYMD(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+function getNthWeekday(weekday,n){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),1);
+  let count=0;
+  while(d.getMonth()===now.getMonth()){
+    if(d.getDay()===weekday){count++;if(count===n){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}}
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+function getWeekNum(dateStr){
+  if(!dateStr)return 1;
+  const target=new Date(dateStr+'T00:00:00'),dow=target.getDay();
+  const d=new Date(target.getFullYear(),target.getMonth(),1);
+  let count=0;
+  while(d<=target){if(d.getDay()===dow)count++;d.setDate(d.getDate()+1);}
+  return count||1;
+}
+function getScDate(sc){
+  const dow=sc.day==='Wednesday'?3:6,today=todayYMD();
+  for(let n=1;n<=4;n++){const d=getNthWeekday(dow,n);if(d&&d>=today)return d;}
+  return getNthWeekday(dow,4)||today;
+}
+function getSelectedDate(){
+  const sc=CUR!=null?SC_LIST[CUR]:null;
+  if(!sc)return todayYMD();
+  const wk=parseInt(document.getElementById('reg-week')?.value||0)+1;
+  return getNthWeekday(sc.day==='Wednesday'?3:6,wk)||todayYMD();
+}
+function fmtDate(dateStr){
+  if(!dateStr)return '';
+  const d=new Date(dateStr+'T00:00:00'),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+mo[d.getMonth()]+' '+d.getFullYear();
+}
+
 function initFirebase(){
   try{
-    firebase.initializeApp(FIREBASE_CONFIG);
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB=firebase.database();
     firebaseReady=true; // Set ready immediately
 
@@ -310,6 +369,7 @@ function initFirebase(){
     firebaseDB.ref('phc_data').once('value', snap=>{
       const data=snap.val();
       if(data){
+        normalizeDB(data);
         DB=data;
         SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -326,6 +386,7 @@ function initFirebase(){
     firebaseDB.ref('phc_data').on('value', snap=>{
       const data=snap.val();
       if(data){
+        normalizeDB(data);
         // Merge: only update SCs that exist in Firebase
         Object.keys(data).forEach(scName=>{ DB[scName]=data[scName]; });
         try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
@@ -354,14 +415,8 @@ function initFirebase(){
 
 
 function showSyncStatus(msg){
-  let el=document.getElementById('sync-status');
-  if(!el){
-    el=document.createElement('div');
-    el.id='sync-status';
-    el.style.cssText='position:fixed;top:8px;right:10px;font-size:9px;font-weight:800;color:#fff;opacity:.85;z-index:9999;pointer-events:none';
-    document.body.appendChild(el);
-  }
-  el.textContent=msg;
+  const el=document.getElementById('sync-status');
+  if(el) el.textContent=msg;
 }
 
 // Wipe corrupted openBal
@@ -417,7 +472,7 @@ function buildDash(){
   document.getElementById('sc-grid').innerHTML=SC_LIST.map((sc,i)=>{
     const d=DB[sc.name]||blankSC();
     const cls=sc.day==='Wednesday'?'wed':'sat';
-    const todaySess=(d.sessions||[]).find(s=>s.date===TSTR);
+    const todaySess=(d.sessions||[]).find(s=>s.date===getScDate(sc));
     let dueCount=0,issCount=0;
     if(todaySess){
       VACCINES.forEach(v=>{
@@ -438,9 +493,8 @@ function openSC(i){
   CUR=i;
   const sc=SC_LIST[i];
   document.getElementById('sc-title').textContent=sc.name;
-  const sd=DOW===3?'Wednesday':DOW===6?'Saturday':sc.day;
-  document.getElementById('reg-day').value=sd;
-  document.getElementById('reg-week').value=Math.min(Math.ceil(TODAY.getDate()/7),4)-1;
+  document.getElementById('reg-day').value=sc.day;
+  document.getElementById('reg-week').value=getWeekNum(getScDate(sc))-1;
   buildRegister();
   document.getElementById('s-home').classList.remove('active');
   document.getElementById('s-sc').classList.add('active');
@@ -453,8 +507,13 @@ function buildRegister(){
   const wk=parseInt(document.getElementById('reg-week').value||0);
   const sch=SCH[sc.name];
   const site=sch?(day==='Wednesday'?sch.wed:sch.sat)[wk]||'-':'-';
-  document.getElementById('reg-site').textContent=WKS[wk]+' '+day+' — '+site;
-  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
+  document.getElementById('reg-site').textContent=WKS[wk]+' '+sc.day+' — '+site;
+  // Date badge
+  let _db=document.getElementById('sess-date-lbl');
+  if(!_db){_db=document.createElement('div');_db.id='sess-date-lbl';_db.style.cssText='background:#1a5c2a;color:#fff;padding:7px 12px;border-radius:10px;text-align:center;font-size:14px;font-weight:800;margin:8px 0';
+  const _sb=document.getElementById('reg-site');if(_sb&&_sb.parentNode)_sb.parentNode.insertAdjacentElement('afterend',_db);}
+  _db.textContent='📅 Session: '+fmtDate(getSelectedDate());
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
     document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
     const k=v.replace(/[^a-z0-9]/gi,'_');
     const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
@@ -554,7 +613,7 @@ function saveAll(){
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
   let any=false;const newOpenDoses={};
-  const ei=d.sessions?d.sessions.findIndex(s=>s.date===TSTR):-1;
+  const ei=d.sessions?d.sessions.findIndex(s=>s.date===getSelectedDate()):-1;
   const existingData=ei>=0?d.sessions[ei].data:{};
   const data={};
   VACCINES.forEach(v=>{
@@ -612,7 +671,7 @@ function clearAll(){
   const wk=parseInt(document.getElementById('reg-week').value||0);
   // Only clear PO fields — keep ANM due intact
   if(d.sessions){
-    const ei=d.sessions.findIndex(s=>s.date===TSTR);
+    const ei=d.sessions.findIndex(s=>s.date===getSelectedDate());
     if(ei>=0){
       VACCINES.forEach(v=>{
         if(d.sessions[ei].data[v]){
@@ -652,6 +711,20 @@ function waSlip(){
   window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
 }
 
+
+// Load Firebase SDK then init
+(function loadFirebase(){
+  const s1=document.createElement('script');
+  s1.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
+  s1.onload=function(){
+    const s2=document.createElement('script');
+    s2.src='https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js';
+    s2.onload=initFirebase;
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+})();
+
 buildDash();
 
 // Auto-refresh when ANM app saves data (same device, same browser)
@@ -674,7 +747,7 @@ function syncANMAdm(){
   const d=DB[sc.name]||blankSC();
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
-  const saved=(d.sessions||[]).find(s=>s.date===TSTR);
+  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
   if(!saved) return;
   let updated=false;
   VACCINES.forEach(v=>{
@@ -1000,6 +1073,11 @@ function waReport(){
   window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
 }
 
+
+// Startup
+showSyncStatus('⏳ Connecting...');
+buildDash();
+window.addEventListener('load', initFirebase);
 </script>
 </body>
 </html>
