@@ -440,7 +440,11 @@ function buildDueForm(){
   if(!_db){_db=document.createElement('div');_db.id='sess-date-lbl';_db.style.cssText='background:#1a5c2a;color:#fff;padding:7px 12px;border-radius:10px;text-align:center;font-size:14px;font-weight:800;margin:8px 0';
   const _sb=document.getElementById('reg-site');if(_sb&&_sb.parentNode)_sb.parentNode.insertAdjacentElement('afterend',_db);}
   _db.textContent='📅 Session: '+fmtDate(getSelectedDate());
-  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
+  const _selDate=getSelectedDate();
+  const _selWk=parseInt(document.getElementById('reg-week').value||0);
+  const _selDay=document.getElementById('reg-day').value;
+  const saved=(d.sessions||[]).find(s=>s.date===_selDate) ||
+              (d.sessions||[]).find(s=>s.week===_selWk && s.day===_selDay);
   const badge=document.getElementById('due-saved-badge');
   badge.innerHTML=saved?'<div class="saved-badge">&#10003; Due slip saved for today</div>':'';
   document.getElementById('due-body').innerHTML=VACCINES.map(v=>{

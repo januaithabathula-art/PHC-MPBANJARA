@@ -519,9 +519,13 @@ function buildRegister(){
   const _selDay=document.getElementById('reg-day').value;
   const _selWk=parseInt(document.getElementById('reg-week').value||0)+1;
   const _selDow=_selDay==='Wednesday'?3:6;
-  const _selDate=getNthWeekday(_selDow,_selWk)||todayYMD();
-  _db.textContent='📅 Session: '+fmtDate(_selDate);
-  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
+  const _badgeDate=getNthWeekday(_selDow2,_selWk2)||todayYMD();
+  _db.textContent='📅 Session: '+fmtDate(_badgeDate);
+  const _regDate=getSelectedDate();
+  const _regWk=parseInt(document.getElementById('reg-week').value||0);
+  const _regDay=document.getElementById('reg-day').value;
+  const saved=(d.sessions||[]).find(s=>s.date===_regDate) ||
+              (d.sessions||[]).find(s=>s.week===_regWk && s.day===_regDay);
     document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
     const k=v.replace(/[^a-z0-9]/gi,'_');
     const dpv=DPV[v]||10;const isOVP=OVP.includes(v);
@@ -755,7 +759,11 @@ function syncANMAdm(){
   const d=DB[sc.name]||blankSC();
   const day=document.getElementById('reg-day').value;
   const wk=parseInt(document.getElementById('reg-week').value||0);
-  const saved=(d.sessions||[]).find(s=>s.date===getSelectedDate());
+  const _regDate=getSelectedDate();
+  const _regWk=parseInt(document.getElementById('reg-week').value||0);
+  const _regDay=document.getElementById('reg-day').value;
+  const saved=(d.sessions||[]).find(s=>s.date===_regDate) ||
+              (d.sessions||[]).find(s=>s.week===_regWk && s.day===_regDay);
   if(!saved) return;
   let updated=false;
   VACCINES.forEach(v=>{
