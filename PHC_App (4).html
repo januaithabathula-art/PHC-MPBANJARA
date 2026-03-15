@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PHC MP Banjara — Vaccine Register</title>
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta name="theme-color" content="#1a5c2a">
+<link rel="manifest" href="manifest-phc.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PHC Banjara">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g1:#0d2b0d;--g2:#1a5c2a;--g3:#2e7d32;--gl:#e8f5e9;--gb:#a5d6a7;
+  --r1:#6a0000;--r2:#b71c1c;--rl:#fff5f5;
+  --b1:#0d2b5c;--b2:#1565c0;--bl:#e3f2fd;
+  --o1:#5a3500;--ol:#fff8e1;
+  --p1:#4a0080;--pl:#f3e5f5;
+  --text:#1a1a2e;--muted:#6b7a8d;--border:#e0e0e0;--card:#fff;
+  --safe:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#f0f4f0;color:var(--text);min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+/* TOPBAR */
+.topbar{background:var(--g1);color:#fff;padding:12px 16px calc(12px + var(--safe)) 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tb-back{background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-title{font-size:15px;font-weight:800;flex:1}
+.tb-sub{font-size:10px;opacity:.65;margin-top:1px}
+#sync-status{font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.15)}
+/* BODY */
+.body{flex:1;padding:14px 14px calc(24px + var(--safe));overflow-y:auto}
+/* HERO */
+.hero{background:linear-gradient(135deg,#0d2b0d 0%,#2e7d32 100%);border-radius:18px;padding:18px;color:#fff;margin-bottom:14px}
+.hero-name{font-size:22px;font-weight:900;letter-spacing:-.3px}
+.hero-sub{font-size:11px;opacity:.7;margin-top:2px;margin-bottom:14px}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hg{background:rgba(255,255,255,.12);border-radius:12px;padding:10px 6px;text-align:center}
+.hg .n{font-size:22px;font-weight:900}
+.hg .l{font-size:8px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+/* DATE STRIP */
+.date-strip{background:#fff;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--g2);border:1px solid var(--gb);display:flex;align-items:center;gap:8px}
+/* SC GRID */
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:12px 0 8px}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc-card{background:var(--card);border-radius:14px;padding:13px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;border-left:4px solid var(--g3)}
+.sc-card.sat{border-left-color:var(--b2)}
+.sc-card:active{transform:scale(.97)}
+.sname{font-size:13px;font-weight:800;margin-bottom:3px}
+.sday{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g3)}
+.sc-card.sat .sday{color:var(--b2)}
+.sdate{font-size:10px;color:var(--muted);margin-top:2px}
+.due-badge{display:inline-block;background:var(--bl);color:var(--b2);border-radius:5px;padding:2px 6px;font-size:9px;font-weight:800;margin-top:5px}
+/* SESSION REGISTER */
+.sess-bar{background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sess-bar label{font-size:10px;font-weight:700;color:var(--muted)}
+.sess-bar select{border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none}
+.site-lbl{font-size:11px;font-weight:700;color:var(--g2);flex:1;text-align:right}
+.date-badge{background:var(--g2);color:#fff;border-radius:10px;padding:7px 14px;text-align:center;font-size:14px;font-weight:800;margin-bottom:10px}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:10px}
+table.reg{width:100%;border-collapse:collapse;min-width:480px}
+table.reg th{padding:7px 6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;color:#fff;text-align:center}
+table.reg td{padding:6px 5px;border-bottom:1px solid #f0f4f0;font-size:12px;text-align:center;vertical-align:middle}
+table.reg td:first-child{text-align:left;font-weight:700;font-size:11px;padding-left:8px;min-width:85px;position:sticky;left:0;background:#fff;border-right:2px solid var(--border)}
+table.reg tr:nth-child(even) td{background:#f8fdf8}
+table.reg tr:nth-child(even) td:first-child{background:#f5fcf5}
+.due-row td{background:#e8f0ff !important}
+.due-row td:first-child{background:#dde8ff !important}
+.ri{width:58px;border:1.5px solid var(--border);border-radius:7px;padding:6px 4px;font-size:13px;font-family:'DM Mono',monospace;font-weight:500;text-align:center;outline:none;background:#fff}
+.ri:focus{border-color:var(--g3)}
+.ri.iss{border-color:#ffb0b0;background:#fff8f8}
+.ri.wst{border-color:#ffcc80;background:#fffde7}
+.c-op{color:var(--g2);font-weight:800;font-family:'DM Mono',monospace}
+.c-due{color:var(--b2);font-weight:800;font-family:'DM Mono',monospace}
+.c-adm{color:var(--g3);font-weight:800;font-family:'DM Mono',monospace}
+.c-cl{color:var(--p1);font-weight:800;font-family:'DM Mono',monospace}
+.otag{font-size:7px;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;font-weight:800}
+.oy{background:var(--gl);color:var(--g2)}
+.on2{background:var(--rl);color:var(--r2)}
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:13px;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:inherit;margin-top:8px}
+.btn-g{background:var(--g2);color:#fff}
+.btn-b{background:var(--b2);color:#fff}
+.btn-r{background:var(--r2);color:#fff}
+.btn-wa{background:#25d366;color:#fff}
+.btn2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+/* TABS */
+.tabs{display:flex;background:#e8f5e9;border-radius:12px;padding:4px;margin-bottom:10px;gap:4px}
+.tab-btn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--muted)}
+.tab-btn.active{background:#fff;color:var(--g1);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.pane{display:none}
+.pane.active{display:block}
+/* REPORT */
+.rpt-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+table.rpt{width:100%;border-collapse:collapse;min-width:500px}
+table.rpt th{padding:7px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#fff;text-align:center;white-space:nowrap}
+table.rpt td{padding:6px 8px;border-bottom:1px solid #e8f5e9;font-size:11px;text-align:center;font-family:'DM Mono',monospace}
+table.rpt td.nm{text-align:left;font-family:'DM Sans',sans-serif;font-weight:800;font-size:11px;padding-left:10px;position:sticky;left:0;background:#fff;border-right:2px solid var(--border);min-width:100px}
+table.rpt tfoot td{background:var(--g1);color:#fff;font-weight:800}
+table.rpt tfoot td.nm{background:var(--g1);color:#fff;font-family:'DM Sans',sans-serif}
+/* ALERTS */
+.alert{padding:10px 12px;border-radius:10px;font-size:11px;margin-bottom:8px;border-left:3px solid;line-height:1.5}
+.ag{background:var(--gl);border-color:var(--g3);color:var(--g1)}
+.ar{background:var(--rl);border-color:var(--r2);color:var(--r1)}
+/* TOAST */
+#toast{position:fixed;bottom:calc(20px + var(--safe));left:50%;transform:translateX(-50%) translateY(60px);background:var(--g1);color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all .28s;z-index:9999;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.saved-note{background:var(--gl);color:var(--g1);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;margin-bottom:8px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div class="screen active" id="s-home">
+  <div class="topbar">
+    <div class="tb-info">
+      <div class="tb-title">🏥 PHC MP Banjara</div>
+      <div class="tb-sub" id="home-date"></div>
+    </div>
+    <div id="sync-status">⏳</div>
+  </div>
+  <div class="body">
+    <div class="hero">
+      <div class="hero-name">Vaccine Register</div>
+      <div class="hero-sub">PHC MP Banjara — Bhadradri Kothagudem</div>
+      <div class="hero-grid">
+        <div class="hg"><div class="n" id="h-sc">13</div><div class="l">Sub Centres</div></div>
+        <div class="hg"><div class="n" id="h-sess">0</div><div class="l">Sessions</div></div>
+        <div class="hg"><div class="n" id="h-due">0</div><div class="l">Dues Today</div></div>
+      </div>
+    </div>
+    <div class="sec">Sub Centres — Tap to Open</div>
+    <div class="sc-grid" id="sc-grid"></div>
+  </div>
+</div>
+
+<!-- SC REGISTER SCREEN -->
+<div class="screen" id="s-sc">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">←</button>
+    <div class="tb-info">
+      <div class="tb-title" id="sc-title"></div>
+      <div class="tb-sub">Vaccine Register</div>
+    </div>
+    <div id="sync-status2">⏳</div>
+  </div>
+  <div class="body">
+    <!-- Session selector -->
+    <div class="sess-bar">
+      <label>Day</label>
+      <select id="reg-day" onchange="buildRegister()">
+        <option value="Wednesday">Wednesday</option>
+        <option value="Saturday">Saturday</option>
+      </select>
+      <label>Week</label>
+      <select id="reg-week" onchange="buildRegister()">
+        <option value="0">1st</option>
+        <option value="1">2nd</option>
+        <option value="2">3rd</option>
+        <option value="3">4th</option>
+      </select>
+      <div class="site-lbl" id="reg-site"></div>
+    </div>
+    <div class="date-badge" id="sess-date-lbl">📅 —</div>
+    <div id="saved-note"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-reg" onclick="switchTab('reg')">📋 Register</button>
+      <button class="tab-btn" id="tab-rpt" onclick="switchTab('rpt')">📊 Report</button>
+    </div>
+
+    <!-- Register pane -->
+    <div class="pane active" id="pane-reg">
+      <div class="alert ag" style="font-size:10px;margin-bottom:8px">
+        <b>ANM:</b> Enter Due & Adm &nbsp;|&nbsp; <b>PO:</b> Enter Issued & Wasted
+      </div>
+      <div class="tbl-wrap">
+        <table class="reg">
+          <thead>
+            <tr>
+              <th style="background:#1a3a1a;text-align:left;padding-left:8px">VACCINE</th>
+              <th style="background:#1a5c2a">OP.BAL</th>
+              <th style="background:#1565c0">DUE</th>
+              <th style="background:#6a0000">ISSUED</th>
+              <th style="background:#2e7d32">ADM</th>
+              <th style="background:#bf360c">WASTED</th>
+              <th style="background:#4a0080">CL.BAL</th>
+            </tr>
+          </thead>
+          <tbody id="reg-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-g" onclick="saveAll()">💾 Save Session Data</button>
+    </div>
+
+    <!-- Report pane -->
+    <div class="pane" id="pane-rpt">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <label style="font-size:11px;font-weight:700;color:var(--muted)">Month:</label>
+        <select id="rpt-month" onchange="buildReport()" style="border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit;background:#fff;outline:none"></select>
+        <button onclick="waReport()" style="background:#25d366;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">📲 WhatsApp</button>
+      </div>
+      <div id="rpt-body"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="install-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a5c2a;color:#fff;padding:12px 16px;z-index:9998;display:flex;align-items:center;gap:10px;box-shadow:0 -2px 10px rgba(0,0,0,.2)">
+  <div style="flex:1;font-size:13px;font-weight:700">📲 Install as App on your phone</div>
+  <button onclick="installApp()" style="background:#fff;color:#1a5c2a;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">Install</button>
+  <button onclick="document.getElementById('install-bar').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer">✕</button>
+</div>
+
+<script>
+// ═══ CONSTANTS ═══
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBYdAz3dDC9toJferkY3CkRVCyOqbVv4ts",
+  authDomain: "phc-banjara.firebaseapp.com",
+  databaseURL: "https://phc-banjara-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "phc-banjara",
+  storageBucket: "phc-banjara.firebasestorage.app",
+  messagingSenderId: "588369297675",
+  appId: "1:588369297675:web:9265b6db25e5e3cd6ea20e"
+};
+const SC_LIST=[
+  {name:'Anjanapuram'},{name:'MP Banjara'},{name:'Laxmipuram'},
+  {name:'Gandhi Nagar'},{name:'Burgampadu-2'},{name:'Sarapaka'},
+  {name:'Muthyalampeta'},{name:'SR Palem'},{name:'Burgampadu-1'},
+  {name:'NN Prolu'},{name:'Iravendi'},{name:'Krishna Sagar'},{name:'Tekulachervu'}
+];
+const SCH={
+  'Anjanapuram':{wed:['SC Anjanapuram','AWC Anjanapuram-1','AWC Anjanapuram-2','Anjanapuram SC'],sat:['Sompalli','-','G.G. Palli','Buddagudem']},
+  'MP Banjara':{wed:['SC Colony-1','Bestabazar MPB','SC Colony-1','Bestabazar MPB'],sat:['Temple Area','KCR Colony','-','Jinkalagudem']},
+  'Laxmipuram':{wed:['Laxmipuram SC','Laxmipuram-2','Laxmipuram SC','Marrikunta'],sat:['Vepalagadda Laxmi','Polavaram Laxmi','Laxmipuram-3','-']},
+  'Gandhi Nagar':{wed:['AWC Vijayanagaram','Gandhinagar SC','AWC Gandhinagar-2','Bhaskarnagar'],sat:['Srirampuram','Rajeevnagar','Odiyacamp','-']},
+  'Burgampadu-2':{wed:['BPD-2 SC','Rice Mill Area','Mudiraj Bazar','Burgampadu-II'],sat:['Old Sarapaka','Old Sarapaka','Old Sarapaka','-']},
+  'Sarapaka':{wed:['Sundaraiah Nagar','Conductors Colony','Sub-Centre','Conductors Colony'],sat:['Basappa Camp','Masjid Area','G.P.O Area','-']},
+  'Muthyalampeta':{wed:['Mutyalampeta SC','Mutyalampeta SC','East Gate','-'],sat:['East Gate','Ricksha Colony','Mede Colony','Pragathi Area']},
+  'SR Palem':{wed:['SR Palem','Reddypalem-2','SC Gowtapuram','Gowthapuram School'],sat:['SC Colony Gowthapuram','School Area','Reddypalem-2','-']},
+  'Burgampadu-1':{wed:['Ramalayam SC','-','-','-'],sat:['AWC SC Colony-1','SC Colony-2','AWC SC Colony-1','AWC SC Colony-2']},
+  'NN Prolu':{wed:['NNProlu SC Colony','Gommuru','SC Colony-1','NN Prolu SC'],sat:['ST Colony','NNP Sub-Centre','BC Colony NNP','-']},
+  'Iravendi':{wed:['Koyagudem','Iravendi SC','Iravendi SC','Thallagommuru'],sat:['Chintakunta','Mothe','Godaramma Colony','-']},
+  'Krishna Sagar':{wed:['Devaiah Gumpu','SC Colony KSR','Singaram','S. Ramapuram'],sat:['Musalama Illugo','ST Colony & Urladosapadu','Bathulanagar','-']},
+  'Tekulachervu':{wed:['Tekulachervu','Yeddulachervu','Tekulachervu','Gopalapuram'],sat:['Nakiripeta','Woodyard Colony','-','Kothuruthanda']},
+};
+const VACCINES=['BCG','OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','MR','JE','DPT Booster','TD','Vit-A'];
+const OVP=['OPV','fIPV','Hep-B','Pentavalent','RVV','PCV','JE','DPT Booster','TD','Vit-A'];
+const DPV={'BCG':5,'OPV':20,'fIPV':50,'Hep-B':10,'Pentavalent':10,'RVV':2,'PCV':5,'MR':5,'JE':5,'DPT Booster':10,'TD':10,'Vit-A':1};
+const WKS=['1st Week','2nd Week','3rd Week','4th Week'];
+const KEY='phc_combined_v1';
+const TODAY=new Date();
+const DOW=TODAY.getDay();
+
+// ═══ STATE ═══
+let DB={};
+let CUR=null;
+let firebaseDB=null;
+let activeTab='reg';
+
+// ═══ DATE FUNCTIONS ═══
+function todayYMD(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+function getNthWeekday(weekday,n){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),1);
+  let count=0;
+  while(d.getMonth()===now.getMonth()){
+    if(d.getDay()===weekday){
+      count++;
+      if(count===n){
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return null;
+}
+function getScDate(dayName){
+  // Returns upcoming date for given day name
+  const dow=dayName==='Wednesday'?3:6;
+  const today=todayYMD();
+  const todayDow=new Date().getDay();
+  if(todayDow===dow) return today;
+  for(let n=1;n<=4;n++){
+    const d=getNthWeekday(dow,n);
+    if(d&&d>today) return d;
+  }
+  return getNthWeekday(dow,4)||today;
+}
+function getSelectedDate(){
+  const dayEl=document.getElementById('reg-day');
+  const day=dayEl?dayEl.value:'Wednesday';
+  const wk=parseInt(document.getElementById('reg-week')?.value||0)+1;
+  const dow=day==='Wednesday'?3:6;
+  return getNthWeekday(dow,wk)||todayYMD();
+}
+function getWeekNum(dateStr){
+  if(!dateStr) return 1;
+  const target=new Date(dateStr+'T00:00:00');
+  const dow=target.getDay();
+  const d=new Date(target.getFullYear(),target.getMonth(),1);
+  let count=0;
+  while(d<=target){if(d.getDay()===dow)count++;d.setDate(d.getDate()+1);}
+  return count||1;
+}
+function fmtDate(dateStr){
+  if(!dateStr) return '';
+  const d=new Date(dateStr+'T00:00:00');
+  return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear();
+}
+
+// ═══ DB HELPERS ═══
+function blankSC(){return {vax:{},sessions:[]};}
+function normalizeDB(data){
+  if(!data) return;
+  Object.keys(data).forEach(sc=>{
+    if(data[sc]?.sessions&&!Array.isArray(data[sc].sessions)){
+      data[sc].sessions=Object.values(data[sc].sessions);
+    }
+  });
+}
+function findSession(sessions,date,wk,day){
+  return (sessions||[]).find(s=>s.date===date)||
+         (sessions||[]).find(s=>s.week===wk&&s.day===day)||null;
+}
+function findPrevSession(sessions,date,day){
+  return (sessions||[]).filter(s=>s.day===day&&s.date<date).sort((a,b)=>a.date>b.date?1:-1).pop()||null;
+}
+
+// ═══ FIREBASE ═══
+function showSync(msg,el2=true){
+  ['sync-status','sync-status2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=msg;
+  });
+}
+function initFirebase(){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    firebaseDB=firebase.database();
+    showSync('⏳ Loading...');
+    // Load once
+    firebaseDB.ref('phc_data').once('value',snap=>{
+      const data=snap.val();
+      if(data){normalizeDB(data);DB=data;SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});}
+      try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      buildDash();showSync('🟢 Synced');
+    });
+    // Live updates
+    firebaseDB.ref('phc_data').on('value',snap=>{
+      const data=snap.val();
+      if(data){
+        normalizeDB(data);
+        Object.keys(data).forEach(n=>{DB[n]=data[n];});
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      }
+      showSync('🟢 Synced');
+      if(document.getElementById('s-sc').classList.contains('active')&&CUR!=null){
+        buildRegister();
+      } else {
+        buildDash();
+      }
+    });
+  }catch(e){
+    console.warn('Firebase error',e);
+    showSync('🔴 Offline');
+    // Load from localStorage
+    try{const d=JSON.parse(localStorage.getItem(KEY)||'{}');if(d)DB=d;}catch(ex){}
+    buildDash();
+  }
+}
+
+// ═══ TOAST ═══
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ═══ NAVIGATION ═══
+function goHome(){
+  document.getElementById('s-sc').classList.remove('active');
+  document.getElementById('s-home').classList.add('active');
+  buildDash();window.scrollTo(0,0);
+}
+function openSC(i){
+  CUR=i;
+  const sc=SC_LIST[i];
+  document.getElementById('sc-title').textContent=sc.name;
+  // Default: today's session day, or next upcoming
+  const todayDow=new Date().getDay();
+  const defaultDay=todayDow===3?'Wednesday':todayDow===6?'Saturday':
+    // Find which session is coming soonest
+    (()=>{
+      const nextWed=getScDate('Wednesday');
+      const nextSat=getScDate('Saturday');
+      return nextWed<=nextSat?'Wednesday':'Saturday';
+    })();
+  document.getElementById('reg-day').value=defaultDay;
+  const scDate=getScDate(defaultDay);
+  document.getElementById('reg-week').value=getWeekNum(scDate)-1;
+  switchTab('reg');
+  buildRegister();
+  document.getElementById('s-home').classList.remove('active');
+  document.getElementById('s-sc').classList.add('active');
+  window.scrollTo(0,0);
+}
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('pane-reg').classList.toggle('active',tab==='reg');
+  document.getElementById('pane-rpt').classList.toggle('active',tab==='rpt');
+  document.getElementById('tab-reg').classList.toggle('active',tab==='reg');
+  document.getElementById('tab-rpt').classList.toggle('active',tab==='rpt');
+  if(tab==='rpt') buildReport();
+}
+
+// ═══ DASHBOARD ═══
+function buildDash(){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('home-date').textContent=days[DOW]+' — '+TODAY.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  let totSess=0,totDue=0;
+  SC_LIST.forEach(sc=>{
+    const d=DB[sc.name]||blankSC();
+    totSess+=(d.sessions||[]).length;
+    ['Wednesday','Saturday'].forEach(day=>{
+      const sd=getScDate(day);
+      const sess=(d.sessions||[]).find(s=>s.date===sd&&s.day===day);
+      if(sess) VACCINES.forEach(v=>{totDue+=(sess.data?.[v]?.due||0);});
+    });
+  });
+  document.getElementById('h-sess').textContent=totSess;
+  document.getElementById('h-due').textContent=totDue;
+  document.getElementById('sc-grid').innerHTML=SC_LIST.map((sc,i)=>{
+    const d=DB[sc.name]||blankSC();
+    const wedDate=getScDate('Wednesday');
+    const satDate=getScDate('Saturday');
+    const wedSess=(d.sessions||[]).find(s=>s.date===wedDate&&s.day==='Wednesday');
+    const satSess=(d.sessions||[]).find(s=>s.date===satDate&&s.day==='Saturday');
+    let wedDue=0,satDue=0;
+    if(wedSess) VACCINES.forEach(v=>{wedDue+=(wedSess.data?.[v]?.due||0);});
+    if(satSess) VACCINES.forEach(v=>{satDue+=(satSess.data?.[v]?.due||0);});
+    return '<div class="sc-card" onclick="openSC('+i+')">'+
+      '<div class="sname">'+sc.name+'</div>'+
+      '<div style="display:flex;gap:4px;margin-top:4px">'+
+        '<div style="flex:1;background:#e8f5e9;border-radius:6px;padding:3px 5px;font-size:9px;font-weight:700;color:#1a5c2a">Wed '+fmtDate(wedDate).split(' ').slice(0,2).join(' ')+(wedDue>0?' ·'+wedDue+'due':'')+'</div>'+
+        '<div style="flex:1;background:#e3f2fd;border-radius:6px;padding:3px 5px;font-size:9px;font-weight:700;color:#1565c0">Sat '+fmtDate(satDate).split(' ').slice(0,2).join(' ')+(satDue>0?' ·'+satDue+'due':'')+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ═══ REGISTER ═══
+function buildRegister(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const selDay=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const sch=SCH[sc.name];
+  const site=sch?(selDay==='Wednesday'?sch.wed:sch.sat)[wk]||'—':'—';
+
+  document.getElementById('reg-site').textContent=WKS[wk]+' '+selDay+' — '+site;
+  const selDate=getSelectedDate();
+  document.getElementById('sess-date-lbl').textContent='📅 '+fmtDate(selDate)+' ('+selDay+')';
+
+  const saved=findSession(d.sessions,selDate,wk,selDay);
+  const prevSess=findPrevSession(d.sessions||[],selDate,selDay);
+
+  const note=document.getElementById('saved-note');
+  note.innerHTML=saved?'<div class="saved-note">✓ Data saved — '+fmtDate(saved.date)+'</div>':'';
+
+  document.getElementById('reg-body').innerHTML=VACCINES.map(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const isOVP=OVP.includes(v);
+    const dpv=DPV[v]||10;
+    const sv=saved?saved.data[v]||{}:{};
+    const openBal=isOVP?(prevSess?prevSess.data[v]?.clBal||0:0):0;
+    const due=sv.due||0;
+    const iss=sv.iss||0;
+    const adm=sv.adm||0;
+    const wst=sv.wst||0;
+    const clBal=isOVP?Math.max(openBal+iss-adm-wst,0):null;
+    return '<tr'+(due>0?' class="due-row"':'')+'>'+
+      '<td>'+v+'<span class="otag '+(isOVP?'oy':'on2')+'">'+(isOVP?'OVP':'DISC')+'</span></td>'+
+      '<td class="c-op">'+(isOVP?(openBal||'—'):'—')+'</td>'+
+      '<td><input class="ri" style="border-color:#90caf9;background:#e3f2fd" type="number" min="0" placeholder="0" id="due_'+k+'" value="'+(due||'')+'" inputmode="numeric"></td>'+
+      '<td><input class="ri iss" type="number" min="0" placeholder="0" id="iss_'+k+'" value="'+(iss||'')+'" inputmode="numeric"></td>'+
+      '<td><input class="ri" style="border-color:#a5d6a7;background:#e8f5e9" type="number" min="0" placeholder="0" id="adm_'+k+'" value="'+(adm||'')+'" inputmode="numeric"></td>'+
+      '<td><input class="ri wst" type="number" min="0" placeholder="0" id="wst_'+k+'" value="'+(wst||'')+'" inputmode="numeric"></td>'+
+      '<td class="c-cl">'+(isOVP?clBal:(iss>0?Math.max(iss-Math.ceil((adm||0)/dpv)*dpv,0)+' ret':'—'))+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function saveAll(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const selDay=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const selDate=getSelectedDate();
+  if(!d.sessions) d.sessions=[];
+
+  const prevSess=findPrevSession(d.sessions,selDate,selDay);
+  const existing=findSession(d.sessions,selDate,wk,selDay);
+  const ei=existing?d.sessions.indexOf(existing):-1;
+
+  let any=false;
+  const data={};
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const isOVP=OVP.includes(v);
+    const dpv=DPV[v]||10;
+
+    const openBal=isOVP?(prevSess?prevSess.data[v]?.clBal||0:0):0;
+    const due=parseInt(document.getElementById('due_'+k)?.value)||0;
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    const iss=parseInt(document.getElementById('iss_'+k)?.value)||0;
+    const wst=parseInt(document.getElementById('wst_'+k)?.value)||0;
+
+    let ret=0,disc=0,clBal=0;
+    if(isOVP){
+      clBal=Math.max(openBal+iss-adm-wst,0);
+      ret=clBal;
+    } else {
+      const openedD=adm>0?Math.ceil(adm/dpv)*dpv:0;
+      disc=Math.max(openedD-adm,0);
+      ret=Math.max(iss-openedD,0);
+    }
+    data[v]={due,openBal,iss,adm,wst,ret,disc,clBal};
+    if(due||iss||adm||wst) any=true;
+  });
+
+  if(!any){toast('Enter at least one value');return;}
+  const rec={date:selDate,day:selDay,week:wk,data,at:new Date().toISOString()};
+  if(ei>=0) d.sessions[ei]=rec; else d.sessions.push(rec);
+  DB[sc.name]=d;
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+
+  function writeDB(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(d)
+        .then(()=>showSync('🟢 Synced'))
+        .catch(e=>showSync('🔴 '+e.code));
+    } else {
+      showSync('⏳...');setTimeout(writeDB,1500);
+    }
+  }
+  writeDB();
+  buildRegister();
+  toast('✅ Saved — '+sc.name+' | '+fmtDate(selDate));
+}
+
+// Save Due+Adm (ANM fields)
+function saveDueAdm(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const selDay=document.getElementById('reg-day').value;
+  const wk=parseInt(document.getElementById('reg-week').value||0);
+  const selDate=getSelectedDate();
+  if(!d.sessions) d.sessions=[];
+
+  const prevSess=findPrevSession(d.sessions,selDate,selDay);
+  const existing=findSession(d.sessions,selDate,wk,selDay);
+  const ei=existing?d.sessions.indexOf(existing):-1;
+  const existData=existing?existing.data:{};
+
+  let any=false;
+  const data={};
+  VACCINES.forEach(v=>{
+    const k=v.replace(/[^a-z0-9]/gi,'_');
+    const isOVP=OVP.includes(v);
+    const dpv=DPV[v]||10;
+
+    const openBal=isOVP?(prevSess?prevSess.data[v]?.clBal||0:0):0;
+    const due=parseInt(document.getElementById('due_'+k)?.value)||0;
+    const adm=parseInt(document.getElementById('adm_'+k)?.value)||0;
+    const iss=existData[v]?.iss||0;        // preserve PO issued
+    const wst=existData[v]?.wst||0;        // preserve PO wasted
+
+    let ret=0,disc=0,clBal=0;
+    if(isOVP){
+      clBal=Math.max(openBal+iss-adm-wst,0);
+      ret=clBal;
+    } else {
+      const openedD=adm>0?Math.ceil(adm/dpv)*dpv:0;
+      disc=Math.max(openedD-adm,0);
+      ret=Math.max(iss-openedD,0);
+    }
+    data[v]={due,openBal,iss,adm,wst,ret,disc,clBal};
+    if(due||adm) any=true;
+  });
+
+  if(!any){toast('Enter at least one value');return;}
+  const rec={date:selDate,day:selDay,week:wk,data,at:new Date().toISOString()};
+  if(ei>=0) d.sessions[ei]=rec; else d.sessions.push(rec);
+  DB[sc.name]=d;
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+
+  function writeDB(){
+    if(firebaseDB){
+      firebaseDB.ref('phc_data/'+sc.name).set(d)
+        .then(()=>showSync('🟢 Synced'))
+        .catch(e=>showSync('🔴 '+e.code));
+    } else {
+      showSync('⏳...');setTimeout(writeDB,1500);
+    }
+  }
+  writeDB();
+  buildRegister();
+  toast('✅ Saved — '+sc.name+' | '+fmtDate(selDate));
+}
+
+// ═══ REPORT ═══
+function buildReport(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const sel=document.getElementById('rpt-month');
+  if(!sel.options.length){
+    // Populate months
+    const now=new Date();
+    for(let i=0;i<6;i++){
+      const dt=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const ym=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+      const opt=document.createElement('option');
+      opt.value=ym;opt.textContent=dt.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+      sel.appendChild(opt);
+    }
+  }
+  const ym=sel.value;
+  if(!ym) return;
+  const sessions=(d.sessions||[]).filter(s=>s.date&&s.date.startsWith(ym)).sort((a,b)=>a.date>b.date?1:-1);
+  const monLbl=new Date(ym+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+
+  let html='<div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:8px">'+sc.name+' — '+monLbl+'</div>';
+
+  if(!sessions.length){
+    html+='<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">No sessions this month</div>';
+    document.getElementById('rpt-body').innerHTML=html;return;
+  }
+
+  sessions.forEach((sess,si)=>{
+    html+='<div style="background:var(--g1);color:#fff;border-radius:10px 10px 0 0;padding:8px 12px;font-size:11px;font-weight:800;margin-top:'+(si>0?'14px':'0')+'px">'+
+      '📅 Session '+(si+1)+': '+fmtDate(sess.date)+' ('+WKS[sess.week||0]+' '+sc.day+')</div>';
+    html+='<div class="rpt-wrap" style="border-radius:0 0 10px 10px;margin-bottom:0"><table class="rpt"><thead><tr>'+
+      '<th style="background:#1a3a1a;text-align:left;padding-left:8px">VACCINE</th>'+
+      '<th style="background:#1a5c2a">OP.BAL</th>'+
+      '<th style="background:#1565c0">DUE</th>'+
+      '<th style="background:#6a0000">ISSUED</th>'+
+      '<th style="background:#2e7d32">ADM</th>'+
+      '<th style="background:#bf360c">WASTED</th>'+
+      '<th style="background:#4a0080">CL.BAL</th>'+
+    '</tr></thead><tbody>';
+    let totDue=0,totIss=0,totAdm=0,totWst=0;
+    let hasAny=false;
+    VACCINES.forEach(v=>{
+      const sv=sess.data?.[v]||{};
+      const isOVP=OVP.includes(v);
+      const op=sv.openBal||0;const due=sv.due||0;const iss=sv.iss||0;
+      const adm=sv.adm||0;const wst=sv.wst||0;const cl=sv.clBal!=null?sv.clBal:'—';
+      if(!due&&!iss&&!adm&&!wst&&!op) return;
+      hasAny=true;
+      totDue+=due;totIss+=iss;totAdm+=adm;totWst+=wst;
+      html+='<tr>'+
+        '<td class="nm">'+v+'</td>'+
+        '<td>'+(isOVP?(op||'—'):'—')+'</td>'+
+        '<td>'+(due||'—')+'</td>'+
+        '<td>'+(iss||'—')+'</td>'+
+        '<td>'+(adm||'—')+'</td>'+
+        '<td>'+(wst||'—')+'</td>'+
+        '<td>'+(isOVP?cl:'—')+'</td>'+
+      '</tr>';
+    });
+    if(!hasAny) html+='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:10px;font-size:11px;font-family:DM Sans,sans-serif">No data entered</td></tr>';
+    html+='</tbody><tfoot><tr>'+
+      '<td class="nm">TOTAL</td><td>—</td>'+
+      '<td>'+totDue+'</td><td>'+totIss+'</td><td>'+totAdm+'</td><td>'+totWst+'</td><td>—</td>'+
+    '</tr></tfoot></table></div>';
+  });
+
+  // Monthly summary
+  const agg={};VACCINES.forEach(v=>{agg[v]={due:0,iss:0,adm:0,wst:0};});
+  sessions.forEach(s=>{VACCINES.forEach(v=>{const sv=s.data?.[v]||{};agg[v].due+=sv.due||0;agg[v].iss+=sv.iss||0;agg[v].adm+=sv.adm||0;agg[v].wst+=sv.wst||0;});});
+  let gtD=0,gtI=0,gtA=0,gtW=0;
+  VACCINES.forEach(v=>{gtD+=agg[v].due;gtI+=agg[v].iss;gtA+=agg[v].adm;gtW+=agg[v].wst;});
+  html+='<div style="background:#1a3a1a;color:#fff;border-radius:10px;padding:12px;margin-top:14px;font-size:12px;font-weight:700">'+
+    '📊 '+monLbl+' Summary ('+sessions.length+' sessions)<br>'+
+    '<span style="opacity:.8;font-weight:400">Due: '+gtD+' | Issued: '+gtI+' | Adm: '+gtA+' | Wasted: '+gtW+'</span></div>';
+
+  document.getElementById('rpt-body').innerHTML=html;
+}
+
+function waReport(){
+  const sc=SC_LIST[CUR];
+  const d=DB[sc.name]||blankSC();
+  const ym=document.getElementById('rpt-month').value;
+  if(!ym){toast('Select a month first');return;}
+  const sessions=(d.sessions||[]).filter(s=>s.date&&s.date.startsWith(ym));
+  const lines=['PHC MP BANJARA — '+sc.name,'Month: '+new Date(ym+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'}),'Sessions: '+sessions.length,'---'];
+  sessions.forEach((sess,i)=>{
+    lines.push('\nSession '+(i+1)+': '+fmtDate(sess.date));
+    VACCINES.forEach(v=>{
+      const sv=sess.data?.[v]||{};
+      if(sv.iss||sv.adm||sv.due) lines.push('  '+v+': Due='+( sv.due||0)+' Iss='+(sv.iss||0)+' Adm='+(sv.adm||0));
+    });
+  });
+  lines.push('\n---\nPHC MP BANJARA, Bhadradri Kothagudem');
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
+}
+
+
+// ═══ PWA INSTALL ═══
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById('install-bar').style.display='flex';
+});
+function installApp(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{
+      deferredPrompt=null;
+      document.getElementById('install-bar').style.display='none';
+    });
+  }
+}
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('install-bar').style.display='none';
+  toast('✅ App installed successfully!');
+});
+
+// ═══ PWA SERVICE WORKER ═══
+if('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com'){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw-phc.js')
+      .then(()=>console.log('SW registered'))
+      .catch(e=>console.log('SW error',e));
+  });
+}
+
+// ═══ STARTUP ═══
+// Load localStorage first for instant display
+try{const d=JSON.parse(localStorage.getItem(KEY)||'{}');if(d&&Object.keys(d).length)DB=d;}catch(e){}
+SC_LIST.forEach(sc=>{if(!DB[sc.name])DB[sc.name]=blankSC();});
+buildDash();
+window.addEventListener('load',initFirebase);
+</script>
+</body>
+</html>
