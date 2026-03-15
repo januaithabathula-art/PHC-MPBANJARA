@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>PHC MP Banjara — Vaccine Register</title>
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
-<meta name="theme-color" content="#1a3a1a">
+<meta name="theme-color" content="#1a5c2a">
+<link rel="manifest" href="manifest-phc.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PHC Banjara">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -206,6 +211,11 @@ table.rpt tfoot td.nm{background:var(--g1);color:#fff;font-family:'DM Sans',sans
 </div>
 
 <div id="toast"></div>
+<div id="install-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a5c2a;color:#fff;padding:12px 16px;z-index:9998;display:flex;align-items:center;gap:10px;box-shadow:0 -2px 10px rgba(0,0,0,.2)">
+  <div style="flex:1;font-size:13px;font-weight:700">📲 Install as App on your phone</div>
+  <button onclick="installApp()" style="background:#fff;color:#1a5c2a;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">Install</button>
+  <button onclick="document.getElementById('install-bar').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer">✕</button>
+</div>
 
 <script>
 // ═══ CONSTANTS ═══
@@ -279,9 +289,13 @@ function getNthWeekday(weekday,n){
 function getScDate(sc){
   const dow=sc.day==='Wednesday'?3:6;
   const today=todayYMD();
+  const todayDow=new Date().getDay();
+  // If today is the session day, use today
+  if(todayDow===dow) return today;
+  // Otherwise find next upcoming occurrence
   for(let n=1;n<=4;n++){
     const d=getNthWeekday(dow,n);
-    if(d&&d>=today) return d;
+    if(d&&d>today) return d;
   }
   return getNthWeekday(dow,4)||today;
 }
@@ -290,7 +304,10 @@ function getSelectedDate(){
   if(!sc) return todayYMD();
   const wk=parseInt(document.getElementById('reg-week')?.value||0)+1;
   const dow=sc.day==='Wednesday'?3:6;
-  return getNthWeekday(dow,wk)||todayYMD();
+  const d=getNthWeekday(dow,wk);
+  if(d) return d;
+  // Fallback: if today is session day return today
+  return (new Date().getDay()===dow)?todayYMD():todayYMD();
 }
 function getWeekNum(dateStr){
   if(!dateStr) return 1;
@@ -690,6 +707,37 @@ function waReport(){
   });
   lines.push('\n---\nPHC MP BANJARA, Bhadradri Kothagudem');
   window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\n')),'_blank');
+}
+
+
+// ═══ PWA INSTALL ═══
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById('install-bar').style.display='flex';
+});
+function installApp(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{
+      deferredPrompt=null;
+      document.getElementById('install-bar').style.display='none';
+    });
+  }
+}
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('install-bar').style.display='none';
+  toast('✅ App installed successfully!');
+});
+
+// ═══ PWA SERVICE WORKER ═══
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw-phc.js')
+      .then(()=>console.log('SW registered'))
+      .catch(e=>console.log('SW error',e));
+  });
 }
 
 // ═══ STARTUP ═══
