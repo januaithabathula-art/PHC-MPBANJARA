@@ -353,7 +353,7 @@ function renderAdmin(){
       const qVal = (typeof q === 'number') ? q : '';
       html += `<div class="rowitem">
           <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
-            placeholder="qty" value="${qVal}" onchange="setQty(this)">
+            placeholder="qty" value="${qVal}" oninput="setQty(this)">
           <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
         </div>`;
     });
@@ -366,17 +366,20 @@ function renderAdmin(){
   document.getElementById('totalCount').textContent = totalN;
 }
 
+const qtyTimers = {};
 function setQty(el){
   const id = el.dataset.id;
   const raw = el.value.trim();
-  if(raw === ''){
-    availRef.child(id).remove(); // clear -> unknown/available, no count
-  } else {
-    const n = Math.max(0, parseInt(raw, 10) || 0);
-    availRef.child(id).set(n);
-    el.value = n;
-  }
   el.classList.toggle('zero', raw !== '' && parseInt(raw,10) === 0);
+  clearTimeout(qtyTimers[id]);
+  qtyTimers[id] = setTimeout(()=>{
+    if(raw === ''){
+      availRef.child(id).remove(); // clear -> unknown/available, no count
+    } else {
+      const n = Math.max(0, parseInt(raw, 10) || 0);
+      availRef.child(id).set(n);
+    }
+  }, 600); // saves ~0.6s after you stop typing, no need to click away
 }
 
 function bulkSet(val){
