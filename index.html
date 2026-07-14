@@ -75,6 +75,11 @@
   .rowitem .code{font-size:.72rem; color:#93a29c; margin-left:6px;}
   .swtch{position:relative; width:46px; height:26px; flex:0 0 auto;}
   .swtch input{opacity:0; width:0; height:0;}
+  .qtybox{width:64px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:.9rem;
+    text-align:center; flex:0 0 auto;}
+  .qtybox.zero{border-color:var(--red); color:var(--red); background:#FDEDEC;}
+  .dv-item .qty{display:block; font-size:.8rem; font-weight:500; color:var(--green); margin-top:2px;}
+  .dv-item.low .qty{color:var(--amber);}
   .slider{position:absolute; inset:0; background:#E0574A; border-radius:999px; cursor:pointer; transition:.2s;}
   .slider:before{content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff;
     border-radius:50%; transition:.2s;}
@@ -157,8 +162,8 @@
         <span class="savebadge" id="saveBadge">✓ Saved</span>
       </div>
       <div class="bulkbtns">
-        <button onclick="bulkSet(true)">Mark all visible Available</button>
-        <button onclick="bulkSet(false)">Mark all visible Out of stock</button>
+        <button onclick="bulkSet(null)">Clear all visible (mark available)</button>
+        <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
       </div>
     </div>
     <div id="catContainer"></div>
@@ -233,8 +238,16 @@ function flashSaved(){
   setTimeout(()=>b.classList.remove('show'), 1500);
 }
 
+function getQty(id){
+  const v = availability[id];
+  if (v === undefined) return null;      // never set -> unknown, treat as available
+  if (typeof v === 'number') return v;   // explicit quantity
+  if (v === false) return 0;             // legacy: marked out of stock
+  if (v === true) return null;           // legacy: marked available, no count
+  return null;
+}
 function isAvailable(id){
-  return availability[id] !== false; // default true
+  return getQty(id) !== 0;
 }
 
 /* ================= DISPLAY (TV) VIEW ================= */
@@ -262,7 +275,14 @@ function renderDisplay(){
     const items = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id));
     const lbl = CAT_LABELS[c];
     const grid = items.length
-      ? items.map(it=>`<div class="dv-item">${it.name}</div>`).join('')
+      ? items.map(it=>{
+          const q = getQty(it.id);
+          const low = (typeof q === 'number' && q > 0 && q <= 10);
+          const qtyHtml = (typeof q === 'number')
+            ? `<span class="qty">${q} in stock</span>`
+            : '';
+          return `<div class="dv-item ${low?'low':''}">${it.name}${qtyHtml}</div>`;
+        }).join('')
       : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
     return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
         <div class="dv-heading">${lbl.en} <span class="te">${lbl.te}</span></div>
@@ -328,12 +348,12 @@ function renderAdmin(){
     items.forEach(it=>{
       totalN++;
       const av = isAvailable(it.id);
+      const q = getQty(it.id);
       if(av) availN++; else unavailN++;
+      const qVal = (typeof q === 'number') ? q : '';
       html += `<div class="rowitem">
-          <label class="swtch">
-            <input type="checkbox" data-id="${it.id}" ${av?'checked':''} onchange="toggleItem(this)">
-            <span class="slider"></span>
-          </label>
+          <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
+            placeholder="qty" value="${qVal}" onchange="setQty(this)">
           <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
         </div>`;
     });
@@ -346,17 +366,27 @@ function renderAdmin(){
   document.getElementById('totalCount').textContent = totalN;
 }
 
-function toggleItem(el){
+function setQty(el){
   const id = el.dataset.id;
-  const val = el.checked;
-  availRef.child(id).set(val);
+  const raw = el.value.trim();
+  if(raw === ''){
+    availRef.child(id).remove(); // clear -> unknown/available, no count
+  } else {
+    const n = Math.max(0, parseInt(raw, 10) || 0);
+    availRef.child(id).set(n);
+    el.value = n;
+  }
+  el.classList.toggle('zero', raw !== '' && parseInt(raw,10) === 0);
 }
 
 function bulkSet(val){
-  // apply to currently visible (filtered) items only
-  const visibleBoxes = document.querySelectorAll('#catContainer input[type=checkbox]');
+  // val: 0 = mark all visible out of stock, null = clear (available/unspecified)
+  const visibleBoxes = document.querySelectorAll('#catContainer input.qtybox');
   const updates = {};
-  visibleBoxes.forEach(b=>{ updates[b.dataset.id] = val; });
+  visibleBoxes.forEach(b=>{
+    if(val === 0) updates[b.dataset.id] = 0;
+    else updates[b.dataset.id] = null; // null deletes the key in Firebase update()
+  });
   availRef.update(updates);
 }
 
