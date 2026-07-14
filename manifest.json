@@ -1,0 +1,12 @@
+{
+  "name": "PHC MP Banjara - Drug Availability Board",
+  "short_name": "Drug Board",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#F4FBF8",
+  "theme_color": "#0B5D4C",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
