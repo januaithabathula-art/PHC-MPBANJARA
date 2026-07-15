@@ -79,7 +79,8 @@
     text-align:center; flex:0 0 auto;}
   .qtybox.zero{border-color:var(--red); color:var(--red); background:#FDEDEC;}
   .dv-item .qty{display:block; font-size:.8rem; font-weight:500; color:var(--green); margin-top:2px;}
-  .dv-item.low .qty{color:var(--amber);}
+  .dv-item.low{border-left-color:var(--red);}
+  .dv-item.low .qty{color:var(--red); font-weight:700;}
   .slider{position:absolute; inset:0; background:#E0574A; border-radius:999px; cursor:pointer; transition:.2s;}
   .slider:before{content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff;
     border-radius:50%; transition:.2s;}
@@ -253,8 +254,13 @@ function isAvailable(id){
 /* ================= DISPLAY (TV) VIEW ================= */
 let dvActiveCat = null;
 let dvTimer = null;
-let dvProgressTimer = null;
-const DV_ROTATE_MS = 12000;
+let dvAnimRAF = null;
+
+function catDuration(c){
+  const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
+  // more drugs => more time on screen, so everything gets scrolled into view
+  return Math.min(60000, Math.max(9000, 6000 + n*260));
+}
 
 function renderDisplay(){
   const catsEl = document.getElementById('dvCats');
@@ -268,7 +274,7 @@ function renderDisplay(){
     return `<div class="dv-cat ${c===dvActiveCat?'active':''}" data-cat="${c}">${lbl.en}</div>`;
   }).join('');
   catsEl.querySelectorAll('.dv-cat').forEach(el=>{
-    el.onclick = ()=>{ dvActiveCat = el.dataset.cat; restartRotation(); renderDisplay(); };
+    el.onclick = ()=>{ dvActiveCat = el.dataset.cat; renderDisplay(); };
   });
 
   bodyEl.innerHTML = catsWithData.map(c=>{
@@ -294,28 +300,40 @@ function renderDisplay(){
   const totalAll = catsWithData.reduce((n,c)=>n + (DRUGS_BY_CAT[c]||[]).length, 0);
   document.getElementById('dvCount').textContent = `${totalAvail} of ${totalAll} drugs available`;
 
-  if(!dvTimer) startRotation();
+  scheduleActivePanel();
 }
 
-function startRotation(){
-  restartRotation();
-}
-function restartRotation(){
-  clearInterval(dvTimer); clearInterval(dvProgressTimer);
-  let start = Date.now();
-  document.getElementById('dvProgress').style.width='0%';
-  dvProgressTimer = setInterval(()=>{
-    const pct = Math.min(100, ((Date.now()-start)/DV_ROTATE_MS)*100);
-    document.getElementById('dvProgress').style.width = pct+'%';
-  }, 100);
-  dvTimer = setInterval(()=>{
+function scheduleActivePanel(){
+  clearTimeout(dvTimer);
+  cancelAnimationFrame(dvAnimRAF);
+  const dur = catDuration(dvActiveCat);
+  const start = Date.now();
+  const progressEl = document.getElementById('dvProgress');
+  const panel = document.querySelector('.dv-panel.active .dv-grid');
+  const scrollDur = Math.max(1500, dur - 1800); // pause ~1.8s at bottom before switching
+
+  function tick(){
+    const elapsed = Date.now() - start;
+    progressEl.style.width = Math.min(100, (elapsed/dur)*100) + '%';
+    if(panel){
+      const maxScroll = panel.scrollHeight - panel.clientHeight;
+      if(maxScroll > 4){
+        panel.scrollTop = maxScroll * Math.min(1, elapsed/scrollDur);
+      }
+    }
+    if(elapsed < dur){
+      dvAnimRAF = requestAnimationFrame(tick);
+    }
+  }
+  dvAnimRAF = requestAnimationFrame(tick);
+
+  dvTimer = setTimeout(()=>{
     const catsWithData = CAT_ORDER.filter(c => (DRUGS_BY_CAT[c]||[]).length);
     let idx = catsWithData.indexOf(dvActiveCat);
     idx = (idx+1) % catsWithData.length;
     dvActiveCat = catsWithData[idx];
-    start = Date.now();
     renderDisplay();
-  }, DV_ROTATE_MS);
+  }, dur);
 }
 
 /* ================= ADMIN VIEW ================= */
@@ -407,7 +425,7 @@ function setView(mode){
     document.getElementById('displayView').style.display='flex';
     document.getElementById('switchBtn').textContent = 'Manage list';
     location.hash = '';
-    restartRotation();
+    renderDisplay();
   }
 }
 document.getElementById('switchBtn').addEventListener('click', e=>{
