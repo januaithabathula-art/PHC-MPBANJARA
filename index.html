@@ -256,6 +256,15 @@ let dvActiveCat = null;
 let dvTimer = null;
 let dvAnimRAF = null;
 
+// low-stock warning threshold per category type (Tablets/Capsules count in
+// hundreds/thousands per pack, Injections are individually counted, others fall
+// somewhere in between)
+function lowThreshold(cat){
+  if(cat.endsWith('-Tablets')) return 1000;
+  if(cat.endsWith('-Injections')) return 100;
+  return 50; // Ointments, Powders, Syrups, Others
+}
+
 function catDuration(c){
   const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
@@ -280,10 +289,11 @@ function renderDisplay(){
   bodyEl.innerHTML = catsWithData.map(c=>{
     const items = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id));
     const lbl = CAT_LABELS[c];
+    const threshold = lowThreshold(c);
     const grid = items.length
       ? items.map(it=>{
           const q = getQty(it.id);
-          const low = (typeof q === 'number' && q > 0 && q <= 10);
+          const low = (typeof q === 'number' && q > 0 && q <= threshold);
           const qtyHtml = (typeof q === 'number')
             ? `<span class="qty">${q} in stock</span>`
             : '';
