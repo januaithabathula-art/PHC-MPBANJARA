@@ -9,6 +9,6 @@
 const FACILITIES = {
   "mpbanjara": "PHC MP Banjara",
   "sulanagar": "PHC Sulanagar",
-  "Manuguru":  "PHC Manuguru",
+  "manuguru":  "PHC Manuguru",
 
 };
