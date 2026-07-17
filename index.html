@@ -165,15 +165,33 @@
       <div class="bulkbtns">
         <button onclick="bulkSet(null)">Clear all visible (mark available)</button>
         <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
+        <button onclick="document.getElementById('pdfFileInput').click()" style="background:var(--green);color:#fff;border-color:var(--green);">📄 Import e-Aushadhi PDF</button>
+        <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
       </div>
     </div>
     <div id="catContainer"></div>
   </div>
 </div>
 
+<!-- Import preview modal -->
+<div id="importModal" style="display:none; position:fixed; inset:0; background:rgba(11,46,39,.55); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; max-width:640px; width:92%; max-height:82vh; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <b id="importTitle">Reading PDF...</b>
+      <button onclick="closeImportModal()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="importBody" style="padding:16px 20px; overflow:auto; flex:1; font-size:.88rem;"></div>
+    <div style="padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="closeImportModal()" style="padding:8px 16px;border:1px solid var(--line);background:#fff;border-radius:8px;">Cancel</button>
+      <button id="confirmImportBtn" onclick="confirmImport()" style="padding:8px 16px;border:none;background:var(--green);color:#fff;border-radius:8px;font-weight:700;" disabled>Import Quantities</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="drugs_data.js"></script>
 <script>
 /* ============ FIREBASE SETUP ============
@@ -422,6 +440,107 @@ function bulkSet(val){
 }
 
 document.getElementById('searchBox').addEventListener('input', renderAdmin);
+
+/* ================= e-AUSHADHI PDF IMPORT ================= */
+// Build a lookup: item code (string) -> list of matching drugs in our master list
+const CODE_LOOKUP = {};
+Object.keys(DRUGS_BY_CAT).forEach(cat=>{
+  DRUGS_BY_CAT[cat].forEach(it=>{
+    const key = String(it.code).trim();
+    (CODE_LOOKUP[key] = CODE_LOOKUP[key] || []).push({id: it.id, name: it.name, cat});
+  });
+});
+
+let pendingImport = null; // {id: qty, ...}
+
+document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  openImportModal();
+  setImportStatus('Reading PDF, please wait...');
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    let fullText = '';
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      fullText += content.items.map(it=>it.str).join(' ') + ' \n ';
+    }
+    processExtractedText(fullText);
+  } catch(err){
+    setImportStatus('Could not read this PDF: ' + err.message + '. Try a different export, or ask for help.');
+  }
+  e.target.value = ''; // allow re-selecting the same file later
+});
+
+function processExtractedText(text){
+  const norm = text.replace(/\s+/g, ' ');
+  // Matches: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
+  const re = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
+  const totals = {}; // code -> summed active qty
+  let m, rowCount = 0;
+  while((m = re.exec(norm)) !== null){
+    const code = m[1];
+    const qty = parseInt(m[3], 10) || 0;
+    totals[code] = (totals[code] || 0) + qty;
+    rowCount++;
+  }
+
+  const matched = []; // {id, name, qty}
+  const unmatchedCodes = [];
+  Object.keys(totals).forEach(code=>{
+    const hits = CODE_LOOKUP[code];
+    if(hits && hits.length){
+      hits.forEach(h=> matched.push({id: h.id, name: h.name, qty: totals[code]}));
+    } else {
+      unmatchedCodes.push(code);
+    }
+  });
+
+  if(rowCount === 0){
+    setImportStatus('No recognizable drug rows found in this PDF. The report format may be different than expected — send it to your assistant to double-check.');
+    return;
+  }
+
+  pendingImport = {};
+  matched.forEach(d=> pendingImport[d.id] = d.qty);
+
+  const body = document.getElementById('importBody');
+  document.getElementById('importTitle').textContent = `Found ${matched.length} matching drugs`;
+  let html = `<p style="margin-top:0;color:#4a5c56;">Reading found ${rowCount} stock rows in the PDF. These quantities will be set on your board (any drug not in this report keeps its current value):</p>`;
+  html += '<div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;">';
+  matched.sort((a,b)=>a.name.localeCompare(b.name)).forEach(d=>{
+    html += `<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #EEF5F2;font-size:.85rem;">
+      <span>${d.name}</span><b>${d.qty}</b></div>`;
+  });
+  html += '</div>';
+  if(unmatchedCodes.length){
+    html += `<p style="margin-top:10px;color:#93a29c;font-size:.78rem;">${unmatchedCodes.length} item codes in the PDF didn't match anything in your drug list (likely surgical/consumable items, not medicines) — these were skipped.</p>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('confirmImportBtn').disabled = matched.length === 0;
+}
+
+function setImportStatus(msg){
+  document.getElementById('importTitle').textContent = 'e-Aushadhi Import';
+  document.getElementById('importBody').innerHTML = `<p>${msg}</p>`;
+  document.getElementById('confirmImportBtn').disabled = true;
+}
+
+function openImportModal(){
+  pendingImport = null;
+  document.getElementById('importModal').style.display = 'flex';
+}
+function closeImportModal(){
+  document.getElementById('importModal').style.display = 'none';
+}
+function confirmImport(){
+  if(!pendingImport) return;
+  availRef.update(pendingImport);
+  closeImportModal();
+}
 
 /* ================= VIEW SWITCHING ================= */
 function setView(mode){
