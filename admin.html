@@ -136,7 +136,10 @@
 </div>
 
 <div id="overviewView" class="hidden">
-  <div class="facilityBanner" style="max-width:none;">Live snapshot — tap a PHC to edit its stock</div>
+  <div class="facilityBanner" style="max-width:none; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <span>Live snapshot — tap a PHC to edit its stock</span>
+    <button class="modebtn" style="background:var(--green); color:#fff; border-color:var(--green);" onclick="downloadReport()">⬇ Download full report (CSV)</button>
+  </div>
   <div class="ovGrid" id="ovGrid"><div class="loadingNote">Loading all PHCs...</div></div>
 </div>
 
@@ -221,6 +224,7 @@ function showManage(){
 }
 
 const ovListeners = {}; // code -> {ref, fn}
+const ovDataCache = {}; // code -> raw availability object (for export)
 function showOverview(){
   document.getElementById('adminView').classList.add('hidden');
   document.getElementById('overviewView').classList.remove('hidden');
@@ -246,6 +250,7 @@ function showOverview(){
       const ref = db.ref('facilities/' + code + '/drugAvailability');
       const fn = snap => {
         const data = snap.val() || {};
+        ovDataCache[code] = data;
         let outN = 0;
         Object.values(data).forEach(v=>{
           const n = (typeof v === 'number') ? v : (v === false ? 0 : null);
@@ -339,6 +344,48 @@ function setQty(el){
       availRef.child(id).set(n);
     }
   }, 600);
+}
+
+function downloadReport(){
+  const codes = Object.keys(FACILITIES);
+  const missing = codes.filter(c => !(c in ovDataCache));
+  if(missing.length){
+    alert('Still loading data for: ' + missing.map(c=>FACILITIES[c]).join(', ') + '. Wait a few seconds and try again.');
+    return;
+  }
+
+  const rows = [['PHC Code','PHC Name','Category','Drug Code','Drug Name','Status','Quantity']];
+
+  codes.forEach(code=>{
+    const data = ovDataCache[code] || {};
+    CAT_ORDER.forEach(cat=>{
+      (DRUGS_BY_CAT[cat]||[]).forEach(it=>{
+        const v = data[it.id];
+        let status, qty;
+        if(v === undefined){ status = 'Available'; qty = ''; }
+        else if(typeof v === 'number'){ status = (v === 0 ? 'Out of stock' : 'Available'); qty = v; }
+        else if(v === false){ status = 'Out of stock'; qty = ''; }
+        else { status = 'Available'; qty = ''; }
+        rows.push([code, FACILITIES[code], CAT_LABELS[cat].en, it.code, it.name, status, qty]);
+      });
+    });
+  });
+
+  const csv = rows.map(r => r.map(cell=>{
+    const s = String(cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob(["\uFEFF" + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `PHC_Drug_Stock_Report_${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function bulkSet(val){
