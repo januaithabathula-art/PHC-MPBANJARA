@@ -138,7 +138,10 @@
 <div id="overviewView" class="hidden">
   <div class="facilityBanner" style="max-width:none; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <span>Live snapshot — tap a PHC to edit its stock</span>
-    <button class="modebtn" style="background:var(--green); color:#fff; border-color:var(--green);" onclick="downloadReport()">⬇ Download full report (CSV)</button>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="modebtn" style="background:var(--green); color:#fff; border-color:var(--green);" onclick="downloadReport()">⬇ Per-PHC report (CSV)</button>
+      <button class="modebtn" style="background:var(--green-deep); color:#fff; border-color:var(--green-deep);" onclick="downloadCumulativeReport()">⬇ Cumulative report (all PHCs combined)</button>
+    </div>
   </div>
   <div class="ovGrid" id="ovGrid"><div class="loadingNote">Loading all PHCs...</div></div>
 </div>
@@ -382,6 +385,50 @@ function downloadReport(){
   const stamp = new Date().toISOString().slice(0,10);
   a.href = url;
   a.download = `PHC_Drug_Stock_Report_${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadCumulativeReport(){
+  const codes = Object.keys(FACILITIES);
+  const missing = codes.filter(c => !(c in ovDataCache));
+  if(missing.length){
+    alert('Still loading data for: ' + missing.map(c=>FACILITIES[c]).join(', ') + '. Wait a few seconds and try again.');
+    return;
+  }
+
+  const rows = [['Category','Drug Code','Drug Name','Total Qty (all PHCs, where entered)','PHCs Available','PHCs Out of Stock','PHCs Not Reported','Total PHCs']];
+
+  CAT_ORDER.forEach(cat=>{
+    (DRUGS_BY_CAT[cat]||[]).forEach(it=>{
+      let totalQty = 0;
+      let availPHCs = 0, outPHCs = 0, unreportedPHCs = 0;
+      codes.forEach(code=>{
+        const v = (ovDataCache[code]||{})[it.id];
+        if(v === undefined){ unreportedPHCs++; availPHCs++; } // unreported defaults to available
+        else if(typeof v === 'number'){
+          totalQty += v;
+          if(v === 0) outPHCs++; else availPHCs++;
+        } else if(v === false){ outPHCs++; }
+        else { availPHCs++; }
+      });
+      rows.push([CAT_LABELS[cat].en, it.code, it.name, totalQty, availPHCs, outPHCs, unreportedPHCs, codes.length]);
+    });
+  });
+
+  const csv = rows.map(r => r.map(cell=>{
+    const s = String(cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob(["\uFEFF" + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `PHC_Cumulative_Drug_Report_${stamp}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
