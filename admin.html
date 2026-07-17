@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHC Drug Boards — Unified Admin</title>
+<meta name="theme-color" content="#0B5D4C">
+<style>
+  :root{
+    --ink:#0B2E27;
+    --paper:#F4FBF8;
+    --green-deep:#0B5D4C;
+    --green:#128A6E;
+    --green-bright:#1FAE86;
+    --amber:#C97A2B;
+    --red:#B3402E;
+    --line:#D8E8E2;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;min-height:100%;background:var(--paper);color:var(--ink);
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Noto Sans','Noto Sans Telugu',sans-serif;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#BFDCD3;border-radius:6px;}
+
+  .topbar{
+    background:linear-gradient(120deg,var(--green-deep),var(--green));
+    color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 10px rgba(11,46,39,.18); flex-wrap:wrap; gap:10px;
+  }
+  .brand{font-weight:800; font-size:1.1rem;}
+  .brand .sub{font-weight:400; font-size:.82rem; opacity:.9; display:block;}
+
+  select#facilitySelect{
+    padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.6);
+    background:rgba(255,255,255,.15); color:#fff; font-size:.95rem; font-weight:600;
+  }
+  select#facilitySelect option{color:#111;}
+
+  #adminView{max-width:980px; margin:0 auto; padding:16px 14px 60px;}
+  .gate{max-width:360px; margin:80px auto; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:28px; text-align:center; box-shadow:0 4px 18px rgba(11,46,39,.08);}
+  .gate h2{margin:0 0 4px;}
+  .gate p{color:#5a6d67; font-size:.9rem; margin-top:0;}
+  .gate input{width:100%; padding:12px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px;
+    text-align:center; letter-spacing:2px; margin:10px 0;}
+  .gate button{width:100%; padding:12px; background:var(--green); color:#fff; border:none; border-radius:8px;
+    font-size:1rem; font-weight:700; cursor:pointer;}
+  .gate .err{color:var(--red); font-size:.85rem; min-height:18px;}
+
+  .toolbar{position:sticky; top:0; background:var(--paper); padding:12px 0; z-index:5; border-bottom:1px solid var(--line);}
+  .facilityBanner{background:#fff; border:1px solid var(--line); border-left:5px solid var(--green);
+    border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:.92rem; font-weight:700; color:var(--green-deep);}
+  .searchrow{display:flex; gap:8px; margin-bottom:8px;}
+  .searchrow input{flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:.95rem;}
+  .stat{display:flex; gap:14px; font-size:.82rem; color:#4a5c56; flex-wrap:wrap; align-items:center;}
+  .stat b{color:var(--green-deep);}
+  .stat .savebadge{margin-left:auto; font-size:.78rem; color:var(--green); opacity:0; transition:opacity .3s;}
+  .stat .savebadge.show{opacity:1;}
+  .bulkbtns{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .bulkbtns button{flex:0 0 auto; padding:6px 12px; font-size:.78rem; border:1px solid var(--line); background:#fff;
+    border-radius:6px; cursor:pointer; color:#3a4a45;}
+  .bulkbtns button:hover{border-color:var(--green);}
+
+  .catblock{margin-top:18px;}
+  .catblock h3{font-size:.95rem; color:var(--green-deep); border-bottom:2px solid var(--line); padding-bottom:6px;
+    display:flex; justify-content:space-between; align-items:center;}
+  .catblock h3 span.cnt{font-weight:400; font-size:.8rem; color:#7c8d87;}
+  .rowitem{display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid #EEF5F2;}
+  .rowitem:hover{background:#EEFAF5;}
+  .rowitem .nm{flex:1; font-size:.92rem;}
+  .rowitem .code{font-size:.72rem; color:#93a29c; margin-left:6px;}
+  .qtybox{width:64px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:.9rem;
+    text-align:center; flex:0 0 auto;}
+  .qtybox.zero{border-color:var(--red); color:var(--red); background:#FDEDEC;}
+  .hidden{display:none !important;}
+  .loadingNote{text-align:center; color:#8a9a94; padding:30px; font-style:italic;}
+  .modebtn{background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.5); color:#fff;
+    padding:8px 14px; border-radius:8px; font-size:.85rem; cursor:pointer;}
+  .modebtn:hover{background:rgba(255,255,255,.28);}
+
+  /* ---------- overview grid ---------- */
+  #overviewView{max-width:1100px; margin:0 auto; padding:16px 14px 60px;}
+  .ovGrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:14px;}
+  .ovCard{background:var(--card); border:1px solid var(--line); border-left:6px solid var(--green-bright);
+    border-radius:12px; padding:16px 18px; cursor:pointer; box-shadow:0 1px 4px rgba(11,46,39,.05); transition:.15s;}
+  .ovCard:hover{box-shadow:0 4px 14px rgba(11,46,39,.12); transform:translateY(-1px);}
+  .ovCard.hasLow{border-left-color:var(--amber);}
+  .ovCard h4{margin:0 0 8px; color:var(--green-deep); font-size:1.02rem;}
+  .ovCard .row{display:flex; justify-content:space-between; font-size:.85rem; color:#4a5c56; margin-top:4px;}
+  .ovCard .row b{color:var(--ink);}
+  .ovCard .outb{color:var(--red); font-weight:700;}
+  .ovCard .tap{margin-top:10px; font-size:.75rem; color:var(--green); font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Unified Admin — Drug Availability
+    <span class="sub">Manage stock across all PHCs from one place</span>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <button id="overviewBtn" class="modebtn" onclick="showOverview()">Watch all PHCs</button>
+    <select id="facilitySelect"></select>
+  </div>
+</div>
+
+<div id="adminView">
+  <div class="gate" id="gateBox">
+    <h2>Manage stock</h2>
+    <p>Enter PIN to update drug availability</p>
+    <input type="password" id="pinInput" inputmode="numeric" placeholder="PIN" maxlength="6">
+    <button onclick="checkPin()">Unlock</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+
+  <div id="adminBody" class="hidden">
+    <div class="toolbar">
+      <div class="facilityBanner">Editing: <span id="facilityBannerName">—</span></div>
+      <div class="searchrow">
+        <input type="text" id="searchBox" placeholder="Search drug name or code..." oninput="renderAdmin()">
+      </div>
+      <div class="stat">
+        <span><b id="availCount">0</b> available</span>
+        <span><b id="unavailCount">0</b> out of stock</span>
+        <span><b id="totalCount">0</b> total</span>
+        <span class="savebadge" id="saveBadge">✓ Saved</span>
+      </div>
+      <div class="bulkbtns">
+        <button onclick="bulkSet(null)">Clear all visible (mark available)</button>
+        <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
+      </div>
+    </div>
+    <div id="catContainer"><div class="loadingNote">Loading...</div></div>
+  </div>
+</div>
+
+<div id="overviewView" class="hidden">
+  <div class="facilityBanner" style="max-width:none;">Live snapshot — tap a PHC to edit its stock</div>
+  <div class="ovGrid" id="ovGrid"><div class="loadingNote">Loading all PHCs...</div></div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="facilities.js"></script>
+<script src="drugs_data.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAt03uF7axM3mie84JzJzgL3XyYuPZaxOA",
+  authDomain: "available-drugs.firebaseapp.com",
+  databaseURL: "https://available-drugs-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "available-drugs",
+  storageBucket: "available-drugs.firebasestorage.app",
+  messagingSenderId: "717083792114",
+  appId: "1:717083792114:web:497e918e9734346a61f66b",
+  measurementId: "G-JCEC3LE9KL"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const ADMIN_PIN = "1947"; // same PIN as the individual PHC boards
+
+const CAT_LABELS = {
+  'EML-Tablets':{en:'EML · Tablets', te:'మాత్రలు'},
+  'EML-Injections':{en:'EML · Injections', te:'ఇంజెక్షన్లు'},
+  'EML-Ointment':{en:'EML · Ointments', te:'లేపనాలు'},
+  'EML-Powders':{en:'EML · Powders', te:'పొడులు'},
+  'EML-Syrup':{en:'EML · Syrups', te:'సిరప్‌లు'},
+  'EML-Others':{en:'EML · Others', te:'ఇతరాలు'},
+  'AML-Tablets':{en:'AML · Tablets', te:'మాత్రలు'},
+  'AML-Injections':{en:'AML · Injections', te:'ఇంజెక్షన్లు'},
+  'AML-Ointment':{en:'AML · Ointments', te:'లేపనాలు'},
+  'AML-Powders':{en:'AML · Powders', te:'పొడులు'},
+  'AML-Syrup':{en:'AML · Syrups', te:'సిరప్‌లు'},
+  'AML-Others':{en:'AML · Others', te:'ఇతరాలు'}
+};
+const CAT_ORDER = Object.keys(CAT_LABELS);
+
+/* ---------------- facility dropdown ---------------- */
+const sel = document.getElementById('facilitySelect');
+Object.keys(FACILITIES).forEach(code=>{
+  const opt = document.createElement('option');
+  opt.value = code;
+  opt.textContent = FACILITIES[code];
+  sel.appendChild(opt);
+});
+
+let currentFacility = null;
+let availRef = null;
+let availListener = null;
+let availability = {};
+let firstLoad = true;
+
+function switchFacility(code){
+  firstLoad = true;
+  if(availRef && availListener) availRef.off('value', availListener);
+  currentFacility = code;
+  availRef = db.ref('facilities/' + code + '/drugAvailability');
+  document.getElementById('facilityBannerName').textContent = FACILITIES[code] || code;
+  availListener = snap => {
+    availability = snap.val() || {};
+    renderAdmin();
+    flashSaved();
+  };
+  availRef.on('value', availListener);
+}
+
+sel.addEventListener('change', ()=> { switchFacility(sel.value); showManage(); });
+
+/* ---------------- total drug count (for overview cards) ---------------- */
+let TOTAL_DRUGS = 0;
+CAT_ORDER.forEach(c=> TOTAL_DRUGS += (DRUGS_BY_CAT[c]||[]).length);
+
+/* ---------------- view switching ---------------- */
+function showManage(){
+  document.getElementById('overviewView').classList.add('hidden');
+  document.getElementById('adminView').classList.remove('hidden');
+  document.getElementById('overviewBtn').textContent = 'Watch all PHCs';
+  document.getElementById('overviewBtn').onclick = showOverview;
+}
+
+const ovListeners = {}; // code -> {ref, fn}
+function showOverview(){
+  document.getElementById('adminView').classList.add('hidden');
+  document.getElementById('overviewView').classList.remove('hidden');
+  document.getElementById('overviewBtn').textContent = 'Back to editing';
+  document.getElementById('overviewBtn').onclick = showManage;
+
+  const grid = document.getElementById('ovGrid');
+  if(!grid.dataset.built){
+    grid.dataset.built = '1';
+    grid.innerHTML = '';
+    Object.keys(FACILITIES).forEach(code=>{
+      const card = document.createElement('div');
+      card.className = 'ovCard';
+      card.id = 'ovCard_' + code;
+      card.onclick = ()=>{ sel.value = code; switchFacility(code); showManage(); };
+      card.innerHTML = `<h4>${FACILITIES[code]}</h4>
+        <div class="row"><span>Available</span><b id="ovAvail_${code}">—</b></div>
+        <div class="row"><span>Out of stock</span><b class="outb" id="ovOut_${code}">—</b></div>
+        <div class="row"><span>Total drugs</span><b>${TOTAL_DRUGS}</b></div>
+        <div class="tap">Tap to manage this PHC →</div>`;
+      grid.appendChild(card);
+
+      const ref = db.ref('facilities/' + code + '/drugAvailability');
+      const fn = snap => {
+        const data = snap.val() || {};
+        let outN = 0;
+        Object.values(data).forEach(v=>{
+          const n = (typeof v === 'number') ? v : (v === false ? 0 : null);
+          if(n === 0) outN++;
+        });
+        const availN = TOTAL_DRUGS - outN;
+        document.getElementById('ovAvail_'+code).textContent = availN;
+        document.getElementById('ovOut_'+code).textContent = outN;
+        document.getElementById('ovCard_'+code).classList.toggle('hasLow', outN > 0);
+      };
+      ref.on('value', fn);
+      ovListeners[code] = {ref, fn};
+    });
+  }
+}
+
+/* ---------------- PIN gate ---------------- */
+function checkPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === ADMIN_PIN){
+    document.getElementById('gateBox').classList.add('hidden');
+    document.getElementById('adminBody').classList.remove('hidden');
+    switchFacility(sel.value); // start on first facility in the list
+  } else {
+    document.getElementById('pinErr').textContent = 'Incorrect PIN';
+  }
+}
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPin(); });
+
+function flashSaved(){
+  if(firstLoad){ firstLoad = false; return; }
+  const b = document.getElementById('saveBadge');
+  b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'), 1500);
+}
+
+function getQty(id){
+  const v = availability[id];
+  if (v === undefined) return null;
+  if (typeof v === 'number') return v;
+  if (v === false) return 0;
+  if (v === true) return null;
+  return null;
+}
+
+function renderAdmin(){
+  const q = (document.getElementById('searchBox').value||'').toLowerCase().trim();
+  const container = document.getElementById('catContainer');
+  let availN=0, unavailN=0, totalN=0;
+  let html = '';
+
+  CAT_ORDER.forEach(c=>{
+    const items = (DRUGS_BY_CAT[c]||[]).filter(it=>{
+      if(!q) return true;
+      return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
+    });
+    if(!items.length) return;
+    const lbl = CAT_LABELS[c];
+    html += `<div class="catblock" data-cat="${c}"><h3>${lbl.en} <span class="te">${lbl.te}</span> <span class="cnt">${items.length} items</span></h3>`;
+    items.forEach(it=>{
+      totalN++;
+      const q2 = getQty(it.id);
+      if(q2 !== 0) availN++; else unavailN++;
+      const qVal = (typeof q2 === 'number') ? q2 : '';
+      html += `<div class="rowitem">
+          <input type="number" min="0" class="qtybox ${q2===0?'zero':''}" data-id="${it.id}"
+            placeholder="qty" value="${qVal}" oninput="setQty(this)">
+          <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html || `<p style="color:#8a9a94;text-align:center;margin-top:40px;">No drugs match your search.</p>`;
+  document.getElementById('availCount').textContent = availN;
+  document.getElementById('unavailCount').textContent = unavailN;
+  document.getElementById('totalCount').textContent = totalN;
+}
+
+const qtyTimers = {};
+function setQty(el){
+  const id = el.dataset.id;
+  const raw = el.value.trim();
+  el.classList.toggle('zero', raw !== '' && parseInt(raw,10) === 0);
+  clearTimeout(qtyTimers[id]);
+  qtyTimers[id] = setTimeout(()=>{
+    if(raw === ''){
+      availRef.child(id).remove();
+    } else {
+      const n = Math.max(0, parseInt(raw, 10) || 0);
+      availRef.child(id).set(n);
+    }
+  }, 600);
+}
+
+function bulkSet(val){
+  const visibleBoxes = document.querySelectorAll('#catContainer input.qtybox');
+  const updates = {};
+  visibleBoxes.forEach(b=>{
+    updates[b.dataset.id] = val;
+  });
+  Object.keys(updates).forEach(id=>{
+    if(updates[id] === null){ availRef.child(id).remove(); }
+    else { availRef.child(id).set(updates[id]); }
+  });
+}
+</script>
+</body>
+</html>
