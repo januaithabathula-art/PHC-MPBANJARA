@@ -8,6 +8,7 @@
 // immediately.
 const FACILITIES = {
   "mpbanjara": "PHC MP Banjara",
+  "sulanagar": "PHC Sulanagar",
   "example1":  "PHC Example One",
   "example2":  "PHC Example Two"
 };
