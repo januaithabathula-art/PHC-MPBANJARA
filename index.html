@@ -121,7 +121,7 @@
 
 <div class="topbar">
   <div class="brand">
-    <span class="en">PHC MP Banjara — Medicines Available Today</span>
+    <span class="en" id="facilityName">PHC MP Banjara — Medicines Available Today</span>
     <span class="te">నేడు అందుబాటులో ఉన్న మందులు</span>
   </div>
   <div style="display:flex; align-items:center; gap:14px;">
@@ -193,6 +193,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="facilities.js"></script>
 <script src="drugs_data.js"></script>
 <script>
 /* ============ FIREBASE SETUP ============
@@ -211,13 +212,21 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const availRef = db.ref('drugAvailability');
+
+/* ---------------- which PHC is this link for? ---------------- */
+const urlParams = new URLSearchParams(location.search);
+const FACILITY_ID = (urlParams.get('f') || 'mpbanjara').trim();
+const FACILITY_NAME = FACILITIES[FACILITY_ID] || FACILITY_ID; // fall back to the raw code if not yet registered
+const availRef = db.ref('facilities/' + FACILITY_ID + '/drugAvailability');
 
 const ADMIN_PIN = "1947"; // change this to any PIN you like
 
 let availability = {}; // { id: true/false }  -- default true (available) if missing
 
 /* ---------------- clock ---------------- */
+document.getElementById('facilityName').textContent = FACILITY_NAME + ' — Medicines Available Today';
+document.title = FACILITY_NAME + ' — Drug Availability Board';
+
 function tickClock(){
   const now = new Date();
   document.getElementById('clkTime').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -580,7 +589,7 @@ function printStockList(){
     td:last-child, th:last-child{width:70px; text-align:center;}
     @media print{ body{margin:10mm;} }
   </style></head><body>
-  <h1>PHC MP Banjara — Available Drug Stock</h1>
+  <h1>${FACILITY_NAME} — Available Drug Stock</h1>
   <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${totalAvail} drugs available</div>
   ${bodyHtml}
   </body></html>`);
