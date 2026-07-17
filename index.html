@@ -167,6 +167,7 @@
         <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
         <button onclick="document.getElementById('pdfFileInput').click()" style="background:var(--green);color:#fff;border-color:var(--green);">📄 Import e-Aushadhi PDF</button>
         <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
+        <button onclick="printStockList()" style="background:var(--green-deep);color:#fff;border-color:var(--green-deep);">🖨️ Print available stock</button>
       </div>
     </div>
     <div id="catContainer"></div>
@@ -540,6 +541,52 @@ function confirmImport(){
   if(!pendingImport) return;
   availRef.update(pendingImport);
   closeImportModal();
+}
+
+/* ================= PRINT AVAILABLE STOCK ================= */
+function printStockList(){
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  let bodyHtml = '';
+  let totalAvail = 0;
+  CAT_ORDER.forEach(cat=>{
+    const items = (DRUGS_BY_CAT[cat]||[]).filter(it=>isAvailable(it.id));
+    if(!items.length) return;
+    const lbl = CAT_LABELS[cat];
+    totalAvail += items.length;
+    bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
+    items.forEach((it,i)=>{
+      const q = getQty(it.id);
+      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+    });
+    bodyHtml += '</tbody></table>';
+  });
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>PHC MP Banjara - Available Stock - ${dateStr}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif; color:#111; margin:24px;}
+    h1{font-size:1.3rem; margin-bottom:2px;}
+    .sub{color:#555; font-size:.9rem; margin-bottom:18px;}
+    h3{font-size:1rem; margin:18px 0 6px; border-bottom:2px solid #0B5D4C; padding-bottom:3px; color:#0B5D4C;}
+    table{width:100%; border-collapse:collapse; margin-bottom:10px; font-size:.85rem;}
+    th,td{border:1px solid #ccc; padding:4px 8px; text-align:left;}
+    th{background:#EEF5F2;}
+    td:first-child, th:first-child{width:32px; text-align:center;}
+    td:last-child, th:last-child{width:70px; text-align:center;}
+    @media print{ body{margin:10mm;} }
+  </style></head><body>
+  <h1>PHC MP Banjara — Available Drug Stock</h1>
+  <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${totalAvail} drugs available</div>
+  ${bodyHtml}
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=> win.print(), 400);
 }
 
 /* ================= VIEW SWITCHING ================= */
