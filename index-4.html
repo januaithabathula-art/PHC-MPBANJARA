@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PHC MP Banjara — Drug Availability Board</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B5D4C">
+<style>
+  :root{
+    --ink:#0B2E27;
+    --paper:#F4FBF8;
+    --green-deep:#0B5D4C;
+    --green:#128A6E;
+    --green-bright:#1FAE86;
+    --amber:#C97A2B;
+    --red:#B3402E;
+    --line:#D8E8E2;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);color:var(--ink);
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Noto Sans','Noto Sans Telugu',sans-serif;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#BFDCD3;border-radius:6px;}
+
+  /* ---------- shared header ---------- */
+  .topbar{
+    background:linear-gradient(120deg,var(--green-deep),var(--green));
+    color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 10px rgba(11,46,39,.18);
+  }
+  .brand{display:flex; flex-direction:column; line-height:1.25;}
+  .brand .en{font-weight:800; font-size:1.15rem; letter-spacing:.2px;}
+  .brand .te{font-size:.95rem; opacity:.92;}
+  .clock{font-variant-numeric:tabular-nums; font-weight:700; font-size:1.05rem; text-align:right;}
+  .clock .d{font-weight:400; font-size:.8rem; opacity:.85;}
+  .modebtn{
+    background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.5); color:#fff;
+    padding:8px 14px; border-radius:8px; font-size:.85rem; cursor:pointer; text-decoration:none;
+  }
+  .modebtn:hover{background:rgba(255,255,255,.28);}
+
+  /* ================= ADMIN VIEW ================= */
+  #adminView{display:none; max-width:980px; margin:0 auto; padding:16px 14px 60px;}
+  .gate{max-width:360px; margin:80px auto; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:28px; text-align:center; box-shadow:0 4px 18px rgba(11,46,39,.08);}
+  .gate h2{margin:0 0 4px;}
+  .gate p{color:#5a6d67; font-size:.9rem; margin-top:0;}
+  .gate input{width:100%; padding:12px; font-size:1.1rem; border:1px solid var(--line); border-radius:8px;
+    text-align:center; letter-spacing:2px; margin:10px 0;}
+  .gate button{width:100%; padding:12px; background:var(--green); color:#fff; border:none; border-radius:8px;
+    font-size:1rem; font-weight:700; cursor:pointer;}
+  .gate .err{color:var(--red); font-size:.85rem; min-height:18px;}
+
+  .toolbar{position:sticky; top:0; background:var(--paper); padding:12px 0; z-index:5; border-bottom:1px solid var(--line);}
+  .searchrow{display:flex; gap:8px; margin-bottom:8px;}
+  .searchrow input{flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:.95rem;}
+  .stat{display:flex; gap:14px; font-size:.82rem; color:#4a5c56; flex-wrap:wrap; align-items:center;}
+  .stat b{color:var(--green-deep);}
+  .stat .savebadge{margin-left:auto; font-size:.78rem; color:var(--green); opacity:0; transition:opacity .3s;}
+  .stat .savebadge.show{opacity:1;}
+  .bulkbtns{display:flex; gap:8px; margin-top:8px;}
+  .bulkbtns button{flex:0 0 auto; padding:6px 12px; font-size:.78rem; border:1px solid var(--line); background:#fff;
+    border-radius:6px; cursor:pointer; color:#3a4a45;}
+  .bulkbtns button:hover{border-color:var(--green);}
+
+  .catblock{margin-top:18px;}
+  .catblock h3{font-size:.95rem; color:var(--green-deep); border-bottom:2px solid var(--line); padding-bottom:6px;
+    display:flex; justify-content:space-between; align-items:center;}
+  .catblock h3 span.cnt{font-weight:400; font-size:.8rem; color:#7c8d87;}
+  .rowitem{display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid #EEF5F2;}
+  .rowitem:hover{background:#EEFAF5;}
+  .rowitem .nm{flex:1; font-size:.92rem;}
+  .rowitem .code{font-size:.72rem; color:#93a29c; margin-left:6px;}
+  .swtch{position:relative; width:46px; height:26px; flex:0 0 auto;}
+  .swtch input{opacity:0; width:0; height:0;}
+  .qtybox{width:64px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:.9rem;
+    text-align:center; flex:0 0 auto;}
+  .qtybox.zero{border-color:var(--red); color:var(--red); background:#FDEDEC;}
+  .dv-item .qty{display:block; font-size:.8rem; font-weight:500; color:var(--green); margin-top:2px;}
+  .dv-item.low{border-left-color:var(--red);}
+  .dv-item.low .qty{color:var(--red); font-weight:700;}
+  .slider{position:absolute; inset:0; background:#E0574A; border-radius:999px; cursor:pointer; transition:.2s;}
+  .slider:before{content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff;
+    border-radius:50%; transition:.2s;}
+  input:checked + .slider{background:var(--green-bright);}
+  input:checked + .slider:before{transform:translateX(20px);}
+  .hidden{display:none !important;}
+
+  /* ================= TV DISPLAY VIEW ================= */
+  #displayView{display:flex; flex-direction:column; height:100vh;}
+  .dv-body{flex:1; overflow:hidden; padding:22px 30px 10px; position:relative;}
+  .dv-cats{display:flex; gap:10px; padding:14px 30px 0; flex-wrap:wrap;}
+  .dv-cat{padding:6px 16px; border-radius:999px; font-size:.85rem; font-weight:700; color:var(--green-deep);
+    background:#fff; border:1px solid var(--line); cursor:pointer; opacity:.55; transition:.25s;}
+  .dv-cat.active{opacity:1; background:var(--green-deep); color:#fff; box-shadow:0 3px 10px rgba(11,46,39,.25);}
+  .dv-panel{display:none; height:100%; flex-direction:column;}
+  .dv-panel.active{display:flex;}
+  .dv-heading{font-size:1.6rem; font-weight:800; color:var(--green-deep); margin:6px 0 14px; display:flex;
+    align-items:center; gap:10px;}
+  .dv-heading .te{font-weight:500; font-size:1.05rem; color:#4a6a5f;}
+  .dv-grid{flex:1; overflow:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:12px 20px; align-content:start;}
+  .dv-item{background:var(--card); border:1px solid var(--line); border-left:6px solid var(--green-bright);
+    border-radius:10px; padding:12px 16px; font-size:1.05rem; font-weight:600; box-shadow:0 1px 4px rgba(11,46,39,.05);}
+  .dv-empty{color:#8a9a94; font-style:italic; padding:30px; font-size:1.1rem;}
+  .dv-footer{padding:10px 30px 16px; display:flex; justify-content:space-between; align-items:center;
+    color:#5a6d67; font-size:.85rem; border-top:1px solid var(--line);}
+  .dv-progress{height:3px; background:var(--line); position:relative; overflow:hidden;}
+  .dv-progress i{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--green-bright); transition:width .1s linear;}
+  .legend-dot{display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--green-bright); margin-right:6px;}
+
+  @media (max-width: 640px){
+    .brand .en{font-size:1rem;} .brand .te{font-size:.8rem;}
+    .dv-heading{font-size:1.2rem;} .dv-item{font-size:.92rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="en" id="facilityName">PHC MP Banjara — Medicines Available Today</span>
+    <span class="te">నేడు అందుబాటులో ఉన్న మందులు</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <div class="clock"><div id="clkTime">--:--</div><div class="d" id="clkDate">--</div></div>
+    <a href="#" class="modebtn" id="switchBtn">Manage list</a>
+  </div>
+</div>
+
+<!-- ===================== TV DISPLAY VIEW ===================== -->
+<div id="displayView">
+  <div class="dv-progress"><i id="dvProgress"></i></div>
+  <div class="dv-cats" id="dvCats"></div>
+  <div class="dv-body" id="dvBody"></div>
+  <div class="dv-footer">
+    <span><span class="legend-dot"></span>Available today at this PHC</span>
+    <span id="dvCount"></span>
+  </div>
+</div>
+
+<!-- ===================== ADMIN VIEW ===================== -->
+<div id="adminView">
+  <div class="gate" id="gateBox">
+    <h2>Manage today's list</h2>
+    <p>Enter PIN to update drug availability</p>
+    <input type="password" id="pinInput" inputmode="numeric" placeholder="PIN" maxlength="6">
+    <button onclick="checkPin()">Unlock</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+
+  <div id="adminBody" class="hidden">
+    <div class="toolbar">
+      <div class="searchrow">
+        <input type="text" id="searchBox" placeholder="Search drug name or code...">
+      </div>
+      <div class="stat">
+        <span><b id="availCount">0</b> available</span>
+        <span><b id="unavailCount">0</b> out of stock</span>
+        <span><b id="totalCount">0</b> total</span>
+        <span class="savebadge" id="saveBadge">✓ Saved</span>
+      </div>
+      <div class="bulkbtns">
+        <button onclick="bulkSet(null)">Clear all visible (mark available)</button>
+        <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
+        <button onclick="document.getElementById('pdfFileInput').click()" style="background:var(--green);color:#fff;border-color:var(--green);">📄 Import e-Aushadhi PDF</button>
+        <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
+        <button onclick="printStockList()" style="background:var(--green-deep);color:#fff;border-color:var(--green-deep);">🖨️ Print available stock</button>
+      </div>
+    </div>
+    <div id="catContainer"></div>
+  </div>
+</div>
+
+<!-- Import preview modal -->
+<div id="importModal" style="display:none; position:fixed; inset:0; background:rgba(11,46,39,.55); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; max-width:640px; width:92%; max-height:82vh; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <b id="importTitle">Reading PDF...</b>
+      <button onclick="closeImportModal()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="importBody" style="padding:16px 20px; overflow:auto; flex:1; font-size:.88rem;"></div>
+    <div style="padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="closeImportModal()" style="padding:8px 16px;border:1px solid var(--line);background:#fff;border-radius:8px;">Cancel</button>
+      <button id="confirmImportBtn" onclick="confirmImport()" style="padding:8px 16px;border:none;background:var(--green);color:#fff;border-radius:8px;font-weight:700;" disabled>Import Quantities</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="facilities.js"></script>
+<script src="drugs_data.js"></script>
+<script>
+/* ============ FIREBASE SETUP ============
+   Paste the SAME firebaseConfig you already use for your
+   NCD Drug Monitor / ANC Tracker apps. This app writes to a new
+   node "drugAvailability" so it won't disturb your other data. */
+const firebaseConfig = {
+  apiKey: "AIzaSyAt03uF7axM3mie84JzJzgL3XyYuPZaxOA",
+  authDomain: "available-drugs.firebaseapp.com",
+  databaseURL: "https://available-drugs-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "available-drugs",
+  storageBucket: "available-drugs.firebasestorage.app",
+  messagingSenderId: "717083792114",
+  appId: "1:717083792114:web:497e918e9734346a61f66b",
+  measurementId: "G-JCEC3LE9KL"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------------- which PHC is this link for? ---------------- */
+const urlParams = new URLSearchParams(location.search);
+const FACILITY_ID = (urlParams.get('f') || 'mpbanjara').trim();
+const FACILITY_NAME = FACILITIES[FACILITY_ID] || FACILITY_ID; // fall back to the raw code if not yet registered
+const availRef = db.ref('facilities/' + FACILITY_ID + '/drugAvailability');
+
+const ADMIN_PIN = (typeof FACILITY_PINS !== 'undefined' && FACILITY_PINS[FACILITY_ID])
+  ? FACILITY_PINS[FACILITY_ID]
+  : (typeof DEFAULT_PIN !== 'undefined' ? DEFAULT_PIN : "1947");
+
+let availability = {}; // { id: true/false }  -- default true (available) if missing
+
+/* ---------------- clock ---------------- */
+document.getElementById('facilityName').textContent = FACILITY_NAME + ' — Medicines Available Today';
+document.title = FACILITY_NAME + ' — Drug Availability Board';
+
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clkTime').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clkDate').textContent = now.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+tickClock(); setInterval(tickClock, 15000);
+
+/* ---------------- category labels ---------------- */
+const CAT_LABELS = {
+  'EML-Tablets':{en:'EML · Tablets', te:'మాత్రలు'},
+  'EML-Injections':{en:'EML · Injections', te:'ఇంజెక్షన్లు'},
+  'EML-Ointment':{en:'EML · Ointments', te:'లేపనాలు'},
+  'EML-Powders':{en:'EML · Powders', te:'పొడులు'},
+  'EML-Syrup':{en:'EML · Syrups', te:'సిరప్‌లు'},
+  'EML-Others':{en:'EML · Others', te:'ఇతరాలు'},
+  'AML-Tablets':{en:'AML · Tablets', te:'మాత్రలు'},
+  'AML-Injections':{en:'AML · Injections', te:'ఇంజెక్షన్లు'},
+  'AML-Ointment':{en:'AML · Ointments', te:'లేపనాలు'},
+  'AML-Powders':{en:'AML · Powders', te:'పొడులు'},
+  'AML-Syrup':{en:'AML · Syrups', te:'సిరప్‌లు'},
+  'AML-Others':{en:'AML · Others', te:'ఇతరాలు'}
+};
+const CAT_ORDER = Object.keys(CAT_LABELS);
+
+/* ---------------- load availability from Firebase (realtime) ---------------- */
+availRef.on('value', snap => {
+  availability = snap.val() || {};
+  renderDisplay();
+  if(!document.getElementById('adminBody').classList.contains('hidden')) renderAdmin();
+  flashSaved();
+});
+
+let firstLoad = true;
+function flashSaved(){
+  if(firstLoad){ firstLoad = false; return; }
+  const b = document.getElementById('saveBadge');
+  b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'), 1500);
+}
+
+function getQty(id){
+  const v = availability[id];
+  if (v === undefined) return null;      // never set -> unknown, treat as available
+  if (typeof v === 'number') return v;   // explicit quantity
+  if (v === false) return 0;             // legacy: marked out of stock
+  if (v === true) return null;           // legacy: marked available, no count
+  return null;
+}
+function isAvailable(id){
+  return getQty(id) !== 0;
+}
+
+/* ================= DISPLAY (TV) VIEW ================= */
+let dvActiveCat = null;
+let dvTimer = null;
+let dvAnimRAF = null;
+
+// low-stock warning threshold per category type (Tablets/Capsules count in
+// hundreds/thousands per pack, Injections are individually counted, others fall
+// somewhere in between)
+function lowThreshold(cat){
+  if(cat.endsWith('-Tablets')) return 1000;
+  if(cat.endsWith('-Injections')) return 100;
+  return 50; // Ointments, Powders, Syrups, Others
+}
+
+function catDuration(c){
+  const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
+  // more drugs => more time on screen, so everything gets scrolled into view
+  return Math.min(60000, Math.max(9000, 6000 + n*260));
+}
+
+function renderDisplay(){
+  const catsEl = document.getElementById('dvCats');
+  const bodyEl = document.getElementById('dvBody');
+
+  const catsWithData = CAT_ORDER.filter(c => (DRUGS_BY_CAT[c]||[]).length);
+  if(!dvActiveCat || !catsWithData.includes(dvActiveCat)) dvActiveCat = catsWithData[0];
+
+  catsEl.innerHTML = catsWithData.map(c=>{
+    const lbl = CAT_LABELS[c];
+    return `<div class="dv-cat ${c===dvActiveCat?'active':''}" data-cat="${c}">${lbl.en}</div>`;
+  }).join('');
+  catsEl.querySelectorAll('.dv-cat').forEach(el=>{
+    el.onclick = ()=>{ dvActiveCat = el.dataset.cat; renderDisplay(); };
+  });
+
+  bodyEl.innerHTML = catsWithData.map(c=>{
+    const items = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id));
+    const lbl = CAT_LABELS[c];
+    const threshold = lowThreshold(c);
+    const grid = items.length
+      ? items.map(it=>{
+          const q = getQty(it.id);
+          const low = (typeof q === 'number' && q > 0 && q <= threshold);
+          const qtyHtml = (typeof q === 'number')
+            ? `<span class="qty">${q} in stock</span>`
+            : '';
+          return `<div class="dv-item ${low?'low':''}">${it.name}${qtyHtml}</div>`;
+        }).join('')
+      : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
+    return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
+        <div class="dv-heading">${lbl.en} <span class="te">${lbl.te}</span></div>
+        <div class="dv-grid">${grid}</div>
+      </div>`;
+  }).join('');
+
+  const totalAvail = catsWithData.reduce((n,c)=>n + (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length, 0);
+  const totalAll = catsWithData.reduce((n,c)=>n + (DRUGS_BY_CAT[c]||[]).length, 0);
+  document.getElementById('dvCount').textContent = `${totalAvail} of ${totalAll} drugs available`;
+
+  scheduleActivePanel();
+}
+
+function scheduleActivePanel(){
+  clearTimeout(dvTimer);
+  cancelAnimationFrame(dvAnimRAF);
+  const dur = catDuration(dvActiveCat);
+  const start = Date.now();
+  const progressEl = document.getElementById('dvProgress');
+  const panel = document.querySelector('.dv-panel.active .dv-grid');
+  const scrollDur = Math.max(1500, dur - 1800); // pause ~1.8s at bottom before switching
+
+  function tick(){
+    const elapsed = Date.now() - start;
+    progressEl.style.width = Math.min(100, (elapsed/dur)*100) + '%';
+    if(panel){
+      const maxScroll = panel.scrollHeight - panel.clientHeight;
+      if(maxScroll > 4){
+        panel.scrollTop = maxScroll * Math.min(1, elapsed/scrollDur);
+      }
+    }
+    if(elapsed < dur){
+      dvAnimRAF = requestAnimationFrame(tick);
+    }
+  }
+  dvAnimRAF = requestAnimationFrame(tick);
+
+  dvTimer = setTimeout(()=>{
+    const catsWithData = CAT_ORDER.filter(c => (DRUGS_BY_CAT[c]||[]).length);
+    let idx = catsWithData.indexOf(dvActiveCat);
+    idx = (idx+1) % catsWithData.length;
+    dvActiveCat = catsWithData[idx];
+    renderDisplay();
+  }, dur);
+}
+
+/* ================= ADMIN VIEW ================= */
+function checkPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === ADMIN_PIN){
+    document.getElementById('gateBox').classList.add('hidden');
+    document.getElementById('adminBody').classList.remove('hidden');
+    renderAdmin();
+  } else {
+    document.getElementById('pinErr').textContent = 'Incorrect PIN';
+  }
+}
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPin(); });
+
+function renderAdmin(){
+  const q = (document.getElementById('searchBox').value||'').toLowerCase().trim();
+  const container = document.getElementById('catContainer');
+  let availN=0, unavailN=0, totalN=0;
+  let html = '';
+
+  CAT_ORDER.forEach(c=>{
+    const items = (DRUGS_BY_CAT[c]||[]).filter(it=>{
+      if(!q) return true;
+      return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
+    });
+    if(!items.length) return;
+    const lbl = CAT_LABELS[c];
+    html += `<div class="catblock" data-cat="${c}"><h3>${lbl.en} <span class="te">${lbl.te}</span> <span class="cnt">${items.length} items</span></h3>`;
+    items.forEach(it=>{
+      totalN++;
+      const av = isAvailable(it.id);
+      const q = getQty(it.id);
+      if(av) availN++; else unavailN++;
+      const qVal = (typeof q === 'number') ? q : '';
+      html += `<div class="rowitem">
+          <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
+            placeholder="qty" value="${qVal}" oninput="setQty(this)">
+          <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html || `<p style="color:#8a9a94;text-align:center;margin-top:40px;">No drugs match your search.</p>`;
+  document.getElementById('availCount').textContent = availN;
+  document.getElementById('unavailCount').textContent = unavailN;
+  document.getElementById('totalCount').textContent = totalN;
+}
+
+const qtyTimers = {};
+function setQty(el){
+  const id = el.dataset.id;
+  const raw = el.value.trim();
+  el.classList.toggle('zero', raw !== '' && parseInt(raw,10) === 0);
+  clearTimeout(qtyTimers[id]);
+  qtyTimers[id] = setTimeout(()=>{
+    if(raw === ''){
+      availRef.child(id).remove(); // clear -> unknown/available, no count
+    } else {
+      const n = Math.max(0, parseInt(raw, 10) || 0);
+      availRef.child(id).set(n);
+    }
+  }, 600); // saves ~0.6s after you stop typing, no need to click away
+}
+
+function bulkSet(val){
+  // val: 0 = mark all visible out of stock, null = clear (available/unspecified)
+  const visibleBoxes = document.querySelectorAll('#catContainer input.qtybox');
+  const updates = {};
+  visibleBoxes.forEach(b=>{
+    if(val === 0) updates[b.dataset.id] = 0;
+    else updates[b.dataset.id] = null; // null deletes the key in Firebase update()
+  });
+  availRef.update(updates);
+}
+
+document.getElementById('searchBox').addEventListener('input', renderAdmin);
+
+/* ================= e-AUSHADHI PDF IMPORT ================= */
+// Build a lookup: item code (string) -> list of matching drugs in our master list
+const CODE_LOOKUP = {};
+Object.keys(DRUGS_BY_CAT).forEach(cat=>{
+  DRUGS_BY_CAT[cat].forEach(it=>{
+    const key = String(it.code).trim();
+    (CODE_LOOKUP[key] = CODE_LOOKUP[key] || []).push({id: it.id, name: it.name, cat});
+  });
+});
+
+let pendingImport = null; // {id: qty, ...}
+
+document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  openImportModal();
+  setImportStatus('Reading PDF, please wait...');
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    let fullText = '';
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      fullText += content.items.map(it=>it.str).join(' ') + ' \n ';
+    }
+    processExtractedText(fullText);
+  } catch(err){
+    setImportStatus('Could not read this PDF: ' + err.message + '. Try a different export, or ask for help.');
+  }
+  e.target.value = ''; // allow re-selecting the same file later
+});
+
+function processExtractedText(text){
+  const norm = text.replace(/\s+/g, ' ');
+  // Matches both eAushadhi export styles:
+  //  - old bracketed style: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
+  //  - "Stock In Hand Report" style: CODE  EML/AML  TYPE  [batch/dates/PO/supplier/rate]  QTY_ACTIVE  QTY_TOTAL  [VALUE]
+  // The rate/batch block is OPTIONAL because zero-stock rows have no batch/rate at all
+  // (e.g. "30 EML Tablet 0 0"), so requiring it made every zero-stock row silently skip.
+  const re = /(?:\[(\d+(?:\.\d+)?)\]\[[US]\]\s+)?(\d+(?:\.\d+)?)\s+(EML|AML)\b(?:\s+(?:Tablet|Injection|Ointment|Powder|Syrup|Other))?\s*(?:(?:\S+\s+){0,8}?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule|100)\s+)?(\d+)\s+(\d+)/g;
+  const totals = {}; // code -> summed active qty
+  let m, rowCount = 0;
+  while((m = re.exec(norm)) !== null){
+    const code = m[2];
+    const qty = parseInt(m[4], 10) || 0;
+    totals[code] = (totals[code] || 0) + qty;
+    rowCount++;
+  }
+
+  const matched = []; // {id, name, qty}
+  const unmatchedCodes = [];
+  Object.keys(totals).forEach(code=>{
+    const hits = CODE_LOOKUP[code];
+    if(hits && hits.length){
+      hits.forEach(h=> matched.push({id: h.id, name: h.name, qty: totals[code]}));
+    } else {
+      unmatchedCodes.push(code);
+    }
+  });
+
+  if(rowCount === 0){
+    setImportStatus('No recognizable drug rows found in this PDF. The report format may be different than expected — send it to your assistant to double-check.');
+    return;
+  }
+
+  pendingImport = {};
+  matched.forEach(d=> pendingImport[d.id] = d.qty);
+
+  const body = document.getElementById('importBody');
+  document.getElementById('importTitle').textContent = `Found ${matched.length} matching drugs`;
+  let html = `<p style="margin-top:0;color:#4a5c56;">Reading found ${rowCount} stock rows in the PDF. These quantities will be set on your board (any drug not in this report keeps its current value):</p>`;
+  html += '<div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;">';
+  matched.sort((a,b)=>a.name.localeCompare(b.name)).forEach(d=>{
+    html += `<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #EEF5F2;font-size:.85rem;">
+      <span>${d.name}</span><b>${d.qty}</b></div>`;
+  });
+  html += '</div>';
+  if(unmatchedCodes.length){
+    html += `<p style="margin-top:10px;color:#93a29c;font-size:.78rem;">${unmatchedCodes.length} item codes in the PDF didn't match anything in your drug list (likely surgical/consumable items, not medicines) — these were skipped.</p>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('confirmImportBtn').disabled = matched.length === 0;
+}
+
+function setImportStatus(msg){
+  document.getElementById('importTitle').textContent = 'e-Aushadhi Import';
+  document.getElementById('importBody').innerHTML = `<p>${msg}</p>`;
+  document.getElementById('confirmImportBtn').disabled = true;
+}
+
+function openImportModal(){
+  pendingImport = null;
+  document.getElementById('importModal').style.display = 'flex';
+}
+function closeImportModal(){
+  document.getElementById('importModal').style.display = 'none';
+}
+function confirmImport(){
+  if(!pendingImport) return;
+  availRef.update(pendingImport);
+  closeImportModal();
+}
+
+/* ================= PRINT AVAILABLE STOCK ================= */
+function printStockList(){
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  let bodyHtml = '';
+  let totalAvail = 0;
+  CAT_ORDER.forEach(cat=>{
+    const items = (DRUGS_BY_CAT[cat]||[]).filter(it=>isAvailable(it.id));
+    if(!items.length) return;
+    const lbl = CAT_LABELS[cat];
+    totalAvail += items.length;
+    bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug code</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
+    items.forEach((it,i)=>{
+      const q = getQty(it.id);
+      bodyHtml += `<tr><td>${i+1}</td><td>${it.code}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+    });
+    bodyHtml += '</tbody></table>';
+  });
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>PHC MP Banjara - Available Stock - ${dateStr}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif; color:#111; margin:24px;}
+    h1{font-size:1.3rem; margin-bottom:2px;}
+    .sub{color:#555; font-size:.9rem; margin-bottom:18px;}
+    h3{font-size:1rem; margin:18px 0 6px; border-bottom:2px solid #0B5D4C; padding-bottom:3px; color:#0B5D4C;}
+    table{width:100%; border-collapse:collapse; margin-bottom:10px; font-size:.85rem;}
+    th,td{border:1px solid #ccc; padding:4px 8px; text-align:left;}
+    th{background:#EEF5F2;}
+    td:first-child, th:first-child{width:32px; text-align:center;}
+    td:nth-child(2), th:nth-child(2){width:80px; text-align:center;}
+    td:last-child, th:last-child{width:70px; text-align:center;}
+    @media print{ body{margin:10mm;} }
+  </style></head><body>
+  <h1>${FACILITY_NAME} — Available Drug Stock</h1>
+  <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${totalAvail} drugs available</div>
+  ${bodyHtml}
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=> win.print(), 400);
+}
+
+/* ================= VIEW SWITCHING ================= */
+function setView(mode){
+  if(mode==='admin'){
+    document.getElementById('displayView').style.display='none';
+    document.getElementById('adminView').style.display='block';
+    document.getElementById('switchBtn').textContent = 'Back to display board';
+    location.hash = 'admin';
+  } else {
+    document.getElementById('adminView').style.display='none';
+    document.getElementById('displayView').style.display='flex';
+    document.getElementById('switchBtn').textContent = 'Manage list';
+    location.hash = '';
+    renderDisplay();
+  }
+}
+document.getElementById('switchBtn').addEventListener('click', e=>{
+  e.preventDefault();
+  const inAdmin = document.getElementById('adminView').style.display === 'block';
+  setView(inAdmin ? 'display' : 'admin');
+});
+if(location.hash === '#admin') setView('admin'); else setView('display');
+
+/* PWA install support */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
