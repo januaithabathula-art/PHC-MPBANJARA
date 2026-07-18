@@ -129,7 +129,11 @@
       <div class="bulkbtns">
         <button onclick="bulkSet(null)">Clear all visible (mark available)</button>
         <button onclick="bulkSet(0)">Mark all visible Out of stock</button>
+        <button style="background:var(--green);color:#fff;border-color:var(--green);" onclick="downloadFacilityCSV()">⬇ Download this PHC's list (CSV)</button>
+        <button style="background:var(--green-deep);color:#fff;border-color:var(--green-deep);" onclick="document.getElementById('facilityUploadInput').click()">⬆ Upload edited stock (CSV)</button>
+        <input type="file" id="facilityUploadInput" accept=".csv" style="display:none" onchange="uploadFacilityCSV(this.files[0])">
       </div>
+      <div id="uploadResultNote" style="font-size:.8rem; color:#4a5c56; margin-top:6px;"></div>
     </div>
     <div id="catContainer"><div class="loadingNote">Loading...</div></div>
   </div>
@@ -165,7 +169,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const ADMIN_PIN = "1947"; // same PIN as the individual PHC boards
+const ADMIN_PIN = "1947"; // MASTER PIN for this unified dashboard only.
+  // Each individual PHC board now has its own separate PIN (set in
+  // facilities.js under FACILITY_PINS) — this master PIN is independent
+  // of those and lets you (the admin) manage every PHC from one place.
 
 const CAT_LABELS = {
   'EML-Tablets':{en:'EML · Tablets', te:'మాత్రలు'},
@@ -433,6 +440,129 @@ function downloadCumulativeReport(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/* ---------------- per-PHC CSV download ---------------- */
+function downloadFacilityCSV(){
+  if(!currentFacility){ alert('Select a PHC first.'); return; }
+  const rows = [['Category','Drug Code','Drug Name','Status','Quantity']];
+  CAT_ORDER.forEach(cat=>{
+    (DRUGS_BY_CAT[cat]||[]).forEach(it=>{
+      const v = availability[it.id];
+      let status, qty;
+      if(v === undefined){ status = 'Available'; qty = ''; }
+      else if(typeof v === 'number'){ status = (v === 0 ? 'Out of stock' : 'Available'); qty = v; }
+      else if(v === false){ status = 'Out of stock'; qty = ''; }
+      else { status = 'Available'; qty = ''; }
+      rows.push([CAT_LABELS[cat].en, it.code, it.name, status, qty]);
+    });
+  });
+  const csv = rows.map(r => r.map(cell=>{
+    const s = String(cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(["\uFEFF" + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `${currentFacility}_stock_${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- drug code lookup index (Category + Code -> id) ---------------- */
+const CODE_INDEX = {};
+CAT_ORDER.forEach(cat=>{
+  (DRUGS_BY_CAT[cat]||[]).forEach(it=>{
+    const key = (CAT_LABELS[cat].en + '||' + String(it.code)).toLowerCase().trim();
+    CODE_INDEX[key] = it.id;
+    // also index by code alone as a fallback (in case category text doesn't match exactly)
+    const codeOnlyKey = 'code||' + String(it.code).toLowerCase().trim();
+    if(!CODE_INDEX[codeOnlyKey]) CODE_INDEX[codeOnlyKey] = it.id;
+  });
+});
+
+/* ---------------- simple CSV parser (handles quoted commas) ---------------- */
+function parseCSV(text){
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ cell += '"'; i++; } else { inQuotes = false; }
+      } else { cell += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(cell); cell=''; }
+      else if(c === '\n' || c === '\r'){
+        if(c === '\r' && text[i+1] === '\n') i++;
+        row.push(cell); cell='';
+        if(row.length > 1 || row[0] !== '') rows.push(row);
+        row = [];
+      } else { cell += c; }
+    }
+  }
+  if(cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+
+/* ---------------- upload/import a PHC's edited CSV ---------------- */
+function uploadFacilityCSV(file){
+  if(!file || !currentFacility) return;
+  const note = document.getElementById('uploadResultNote');
+  note.textContent = 'Reading file...';
+
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const rows = parseCSV(e.target.result);
+    if(!rows.length){ note.textContent = 'File was empty.'; return; }
+
+    const header = rows[0].map(h=>h.trim().toLowerCase());
+    const catIdx = header.indexOf('category');
+    const codeIdx = header.indexOf('drug code');
+    const statusIdx = header.indexOf('status');
+    const qtyIdx = header.indexOf('quantity');
+
+    if(codeIdx === -1){
+      note.textContent = 'Could not find a "Drug Code" column in this file — nothing imported.';
+      return;
+    }
+
+    let updated = 0, skippedNoCode = 0, skippedNoMatch = 0;
+    for(let r=1; r<rows.length; r++){
+      const row = rows[r];
+      if(!row || row.every(c=>c==='' || c===undefined)) continue;
+      const rawCode = (row[codeIdx]||'').trim();
+      if(!rawCode){ skippedNoCode++; continue; } // no drug code -> not imported
+
+      const rawCat = catIdx > -1 ? (row[catIdx]||'').trim() : '';
+      let id = rawCat ? CODE_INDEX[(rawCat + '||' + rawCode).toLowerCase().trim()] : undefined;
+      if(!id) id = CODE_INDEX['code||' + rawCode.toLowerCase().trim()];
+      if(!id){ skippedNoMatch++; continue; }
+
+      const rawQty = qtyIdx > -1 ? (row[qtyIdx]||'').trim() : '';
+      const rawStatus = statusIdx > -1 ? (row[statusIdx]||'').trim().toLowerCase() : '';
+
+      if(rawQty !== '' && !isNaN(parseInt(rawQty,10))){
+        availRef.child(id).set(Math.max(0, parseInt(rawQty,10)));
+      } else if(rawStatus === 'out of stock'){
+        availRef.child(id).set(0);
+      } else if(rawStatus === 'available'){
+        availRef.child(id).remove();
+      } else {
+        continue; // nothing usable in this row beyond the code
+      }
+      updated++;
+    }
+
+    note.textContent = `Import done: ${updated} drugs updated. ${skippedNoCode} row(s) skipped (missing drug code). ${skippedNoMatch} row(s) skipped (code not found in catalog).`;
+  };
+  reader.readAsText(file, 'UTF-8');
+  document.getElementById('facilityUploadInput').value = '';
 }
 
 function bulkSet(val){

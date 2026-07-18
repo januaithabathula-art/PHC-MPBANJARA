@@ -219,7 +219,9 @@ const FACILITY_ID = (urlParams.get('f') || 'mpbanjara').trim();
 const FACILITY_NAME = FACILITIES[FACILITY_ID] || FACILITY_ID; // fall back to the raw code if not yet registered
 const availRef = db.ref('facilities/' + FACILITY_ID + '/drugAvailability');
 
-const ADMIN_PIN = "1947"; // change this to any PIN you like
+const ADMIN_PIN = (typeof FACILITY_PINS !== 'undefined' && FACILITY_PINS[FACILITY_ID])
+  ? FACILITY_PINS[FACILITY_ID]
+  : (typeof DEFAULT_PIN !== 'undefined' ? DEFAULT_PIN : "1947");
 
 let availability = {}; // { id: true/false }  -- default true (available) if missing
 
@@ -566,10 +568,10 @@ function printStockList(){
     const lbl = CAT_LABELS[cat];
     totalAvail += items.length;
     bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
-    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug code</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
     items.forEach((it,i)=>{
       const q = getQty(it.id);
-      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+      bodyHtml += `<tr><td>${i+1}</td><td>${it.code}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
     });
     bodyHtml += '</tbody></table>';
   });
@@ -586,6 +588,7 @@ function printStockList(){
     th,td{border:1px solid #ccc; padding:4px 8px; text-align:left;}
     th{background:#EEF5F2;}
     td:first-child, th:first-child{width:32px; text-align:center;}
+    td:nth-child(2), th:nth-child(2){width:80px; text-align:center;}
     td:last-child, th:last-child{width:70px; text-align:center;}
     @media print{ body{margin:10mm;} }
   </style></head><body>
