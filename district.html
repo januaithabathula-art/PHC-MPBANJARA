@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>District Drug Report — Select PHCs</title>
+<style>
+  :root{
+    --ink:#0B2E27; --paper:#F4FBF8; --green-deep:#0B5D4C; --green:#128A6E;
+    --green-bright:#1FAE86; --line:#D8E8E2; --card:#FFFFFF; --red:#B3402E;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;}
+  .topbar{background:linear-gradient(120deg,var(--green-deep),var(--green));color:#fff;
+    padding:16px 22px;}
+  .topbar h1{margin:0;font-size:1.2rem;}
+  .topbar p{margin:4px 0 0;font-size:.85rem;opacity:.9;}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px;}
+  .gate{max-width:340px;margin:60px auto;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:26px;text-align:center;}
+  .gate input{width:100%;padding:12px;font-size:1.1rem;border:1px solid var(--line);border-radius:8px;
+    text-align:center;letter-spacing:2px;margin:10px 0;}
+  .gate button{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;
+    font-size:1rem;font-weight:700;cursor:pointer;}
+  .gate .err{color:var(--red);font-size:.85rem;min-height:18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;}
+  .phclist label{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #EEF5F2;
+    font-size:.95rem;cursor:pointer;}
+  .phclist input{width:18px;height:18px;}
+  .rowbtns{display:flex;gap:8px;margin:10px 0;}
+  .rowbtns button{flex:0 0 auto;padding:6px 12px;font-size:.8rem;border:1px solid var(--line);
+    background:#fff;border-radius:6px;cursor:pointer;}
+  .genbtn{width:100%;padding:13px;background:var(--green-deep);color:#fff;border:none;border-radius:9px;
+    font-size:1rem;font-weight:700;cursor:pointer;margin-top:6px;}
+  .genbtn:disabled{opacity:.5;}
+  #status{font-size:.85rem;color:#4a5c56;margin-top:10px;min-height:20px;}
+  #reportOut{margin-top:20px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:.85rem;}
+  th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;}
+  th{background:#EEF5F2;}
+  h3{font-size:1rem;margin:18px 0 6px;border-bottom:2px solid var(--green-deep);padding-bottom:4px;
+    color:var(--green-deep);}
+  .printbtn{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;
+    font-weight:700;cursor:pointer;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>District Drug Report</h1>
+  <p>Pick which PHCs to include, then generate one combined stock report</p>
+</div>
+
+<div class="wrap">
+  <div class="gate" id="gateBox">
+    <h2 style="margin-top:0;">Enter district PIN</h2>
+    <input type="password" id="pinInput" inputmode="numeric" placeholder="PIN" maxlength="6">
+    <button onclick="checkPin()">Unlock</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+
+  <div id="mainBody" style="display:none;">
+    <div class="card">
+      <b>Select PHCs to include</b>
+      <div class="rowbtns">
+        <button onclick="selectAll(true)">Select all</button>
+        <button onclick="selectAll(false)">Clear all</button>
+      </div>
+      <div class="phclist" id="phcList"></div>
+      <button class="genbtn" id="genBtn" onclick="generateReport()">Generate combined report</button>
+      <div id="status"></div>
+    </div>
+    <div id="reportOut"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="facilities.js"></script>
+<script src="drugs_data.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAt03uF7axM3mie84JzJzgL3XyYuPZaxOA",
+  authDomain: "available-drugs.firebaseapp.com",
+  databaseURL: "https://available-drugs-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "available-drugs",
+  storageBucket: "available-drugs.firebasestorage.app",
+  messagingSenderId: "717083792114",
+  appId: "1:717083792114:web:497e918e9734346a61f66b",
+  measurementId: "G-JCEC3LE9KL"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// One PIN unlocks this district report page for everyone who has it.
+// Add DISTRICT_PIN to facilities.js if you want a different value; otherwise
+// this default is used.
+const DISTRICT_PIN = (typeof DISTRICT_REPORT_PIN !== 'undefined') ? DISTRICT_REPORT_PIN : "9999";
+
+function checkPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === DISTRICT_PIN){
+    document.getElementById('gateBox').style.display = 'none';
+    document.getElementById('mainBody').style.display = 'block';
+    buildPhcList();
+  } else {
+    document.getElementById('pinErr').textContent = 'Incorrect PIN';
+  }
+}
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPin(); });
+
+function buildPhcList(){
+  const el = document.getElementById('phcList');
+  el.innerHTML = Object.keys(FACILITIES).map(code=>`
+    <label><input type="checkbox" value="${code}" checked> ${FACILITIES[code]}</label>
+  `).join('');
+}
+function selectAll(val){
+  document.querySelectorAll('#phcList input').forEach(cb=> cb.checked = val);
+}
+
+async function generateReport(){
+  const chosen = Array.from(document.querySelectorAll('#phcList input:checked')).map(cb=>cb.value);
+  if(!chosen.length){
+    document.getElementById('status').textContent = 'Pick at least one PHC first.';
+    return;
+  }
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('status').textContent = `Reading data from ${chosen.length} PHC(s)...`;
+
+  // pull every selected facility's data in parallel
+  const results = await Promise.all(chosen.map(code=>
+    db.ref('facilities/' + code + '/drugAvailability').once('value').then(snap=>({code, data: snap.val() || {}}))
+  ));
+
+  // per-PHC availability lookup: code -> {itemId: qty}
+  const perPhc = {};
+  results.forEach(r=> perPhc[r.code] = r.data);
+
+  function getQtyFor(code, id){
+    const v = perPhc[code][id];
+    if(v === undefined) return null;
+    if(typeof v === 'number') return v;
+    if(v === false) return 0;
+    return null; // true or anything else -> available, no count
+  }
+  function isAvailFor(code, id){ return getQtyFor(code, id) !== 0; }
+
+  // build combined totals per drug across chosen PHCs
+  let html = '';
+  let phcSummaryRows = '';
+  results.forEach(r=>{
+    let avail=0, out=0;
+    Object.keys(DRUGS_BY_CAT).forEach(cat=>{
+      DRUGS_BY_CAT[cat].forEach(it=>{
+        if(isAvailFor(r.code, it.id)) avail++; else out++;
+      });
+    });
+    phcSummaryRows += `<tr><td>${FACILITIES[r.code]||r.code}</td><td>${avail}</td><td>${out}</td></tr>`;
+  });
+
+  html += `<h3>PHCs included (${chosen.length})</h3>
+    <table><thead><tr><th>PHC</th><th>Available drugs</th><th>Out of stock</th></tr></thead>
+    <tbody>${phcSummaryRows}</tbody></table>`;
+
+  Object.keys(DRUGS_BY_CAT).forEach(cat=>{
+    let rows = '';
+    let anyRow = false;
+    DRUGS_BY_CAT[cat].forEach(it=>{
+      let total = 0, phcCount = 0, hasNumber = false;
+      chosen.forEach(code=>{
+        const q = getQtyFor(code, it.id);
+        if(isAvailFor(code, it.id)) phcCount++;
+        if(typeof q === 'number'){ total += q; hasNumber = true; }
+      });
+      if(phcCount > 0){
+        anyRow = true;
+        rows += `<tr><td>${it.name}</td><td>${phcCount} of ${chosen.length}</td><td>${hasNumber ? total : '-'}</td></tr>`;
+      }
+    });
+    if(anyRow){
+      html += `<h3>${cat.replace('-', ' · ')}</h3>
+        <table><thead><tr><th>Drug</th><th>PHCs stocking it</th><th>Combined qty</th></tr></thead>
+        <tbody>${rows}</tbody></table>`;
+    }
+  });
+
+  document.getElementById('reportOut').innerHTML = html +
+    `<button class="printbtn" onclick="window.print()">🖨️ Print this report</button>`;
+  document.getElementById('status').textContent = 'Done.';
+  document.getElementById('genBtn').disabled = false;
+}
+</script>
+</body>
+</html>

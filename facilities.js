@@ -41,3 +41,8 @@ const FACILITY_PINS = {
   "karakagudem": "4108"
 };
 const DEFAULT_PIN = "1947"; // used only if a PHC code isn't listed above
+
+// PIN for the District Drug Report page (district.html) — this is separate
+// from the per-PHC PINs above, since it lets someone see combined data
+// across multiple PHCs. Keep this only with people who should see that.
+const DISTRICT_REPORT_PIN = "9999";
