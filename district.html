@@ -167,6 +167,7 @@ async function generateReport(){
   Object.keys(DRUGS_BY_CAT).forEach(cat=>{
     let rows = '';
     let anyRow = false;
+    let sno = 0;
     DRUGS_BY_CAT[cat].forEach(it=>{
       let total = 0, phcCount = 0, hasNumber = false;
       chosen.forEach(code=>{
@@ -176,12 +177,13 @@ async function generateReport(){
       });
       if(phcCount > 0){
         anyRow = true;
-        rows += `<tr><td>${it.name}</td><td>${phcCount} of ${chosen.length}</td><td>${hasNumber ? total : '-'}</td></tr>`;
+        sno++;
+        rows += `<tr><td>${sno}</td><td>${it.name}</td><td>${it.code}</td><td>${phcCount} of ${chosen.length}</td><td>${hasNumber ? total : '-'}</td></tr>`;
       }
     });
     if(anyRow){
       html += `<h3>${cat.replace('-', ' · ')}</h3>
-        <table><thead><tr><th>Drug</th><th>PHCs stocking it</th><th>Combined qty</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Drug</th><th>Code</th><th>PHCs stocking it</th><th>Combined qty</th></tr></thead>
         <tbody>${rows}</tbody></table>`;
     }
   });
