@@ -9,8 +9,9 @@
 const FACILITIES = {
   "mpbanjara": "PHC MP Banjara",
   "sulanagar": "PHC Sulanagar",
-  "manuguru":  "PHC Manuguru"
-};"aswapuram": "PHC Aswapuram"
+  "manuguru":  "PHC Manuguru",
+  "aswapuram": "PHC Aswapuram"
+};
 
 // One PIN per PHC — used on that PHC's own "Manage list" screen to unlock
 // editing. Each PHC's staff should only know their own PHC's PIN, so they
@@ -20,6 +21,7 @@ const FACILITIES = {
 const FACILITY_PINS = {
   "mpbanjara": "1947",
   "sulanagar": "2201",
-  "manuguru":  "3315"
-};"aswapuram": "2025
+  "manuguru":  "3315",
+  "aswapuram": "2025"
+};
 const DEFAULT_PIN = "1947"; // used only if a PHC code isn't listed above

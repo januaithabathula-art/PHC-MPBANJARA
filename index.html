@@ -220,8 +220,7 @@ const FACILITY_NAME = FACILITIES[FACILITY_ID] || FACILITY_ID; // fall back to th
 const availRef = db.ref('facilities/' + FACILITY_ID + '/drugAvailability');
 
 const ADMIN_PIN = (typeof FACILITY_PINS !== 'undefined' && FACILITY_PINS[FACILITY_ID])
-  ? FACILITY_PINS[FACILITY_ID]
-  : (typeof DEFAULT_PIN !== 'undefined' ? DEFAULT_PIN : "1947");
+  || (typeof DEFAULT_PIN !== 'undefined' ? DEFAULT_PIN : "1947");
 
 let availability = {}; // { id: true/false }  -- default true (available) if missing
 
@@ -489,17 +488,13 @@ document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
 
 function processExtractedText(text){
   const norm = text.replace(/\s+/g, ' ');
-  // Matches both eAushadhi export styles:
-  //  - old bracketed style: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
-  //  - "Stock In Hand Report" style: CODE  EML/AML  TYPE  [batch/dates/PO/supplier/rate]  QTY_ACTIVE  QTY_TOTAL  [VALUE]
-  // The rate/batch block is OPTIONAL because zero-stock rows have no batch/rate at all
-  // (e.g. "30 EML Tablet 0 0"), so requiring it made every zero-stock row silently skip.
-  const re = /(?:\[(\d+(?:\.\d+)?)\]\[[US]\]\s+)?(\d+(?:\.\d+)?)\s+(EML|AML)\b(?:\s+(?:Tablet|Injection|Ointment|Powder|Syrup|Other))?\s*(?:(?:\S+\s+){0,8}?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule|100)\s+)?(\d+)\s+(\d+)/g;
+  // Matches: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
+  const re = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
   const totals = {}; // code -> summed active qty
   let m, rowCount = 0;
   while((m = re.exec(norm)) !== null){
-    const code = m[2];
-    const qty = parseInt(m[4], 10) || 0;
+    const code = m[1];
+    const qty = parseInt(m[3], 10) || 0;
     totals[code] = (totals[code] || 0) + qty;
     rowCount++;
   }
@@ -572,10 +567,10 @@ function printStockList(){
     const lbl = CAT_LABELS[cat];
     totalAvail += items.length;
     bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
-    bodyHtml += '<table><thead><tr><th>#</th><th>Drug code</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
     items.forEach((it,i)=>{
       const q = getQty(it.id);
-      bodyHtml += `<tr><td>${i+1}</td><td>${it.code}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
     });
     bodyHtml += '</tbody></table>';
   });
@@ -592,7 +587,6 @@ function printStockList(){
     th,td{border:1px solid #ccc; padding:4px 8px; text-align:left;}
     th{background:#EEF5F2;}
     td:first-child, th:first-child{width:32px; text-align:center;}
-    td:nth-child(2), th:nth-child(2){width:80px; text-align:center;}
     td:last-child, th:last-child{width:70px; text-align:center;}
     @media print{ body{margin:10mm;} }
   </style></head><body>
