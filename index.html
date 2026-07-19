@@ -489,13 +489,17 @@ document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
 
 function processExtractedText(text){
   const norm = text.replace(/\s+/g, ' ');
-  // Matches: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
-  const re = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
+  // Matches both eAushadhi export styles:
+  //  - old bracketed style: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
+  //  - "Stock In Hand Report" style: CODE  EML/AML  TYPE  [batch/dates/PO/supplier/rate]  QTY_ACTIVE  QTY_TOTAL  [VALUE]
+  // The rate/batch block is OPTIONAL because zero-stock rows have no batch/rate at all
+  // (e.g. "30 EML Tablet 0 0"), so requiring it made every zero-stock row silently skip.
+  const re = /(?:\[(\d+(?:\.\d+)?)\]\[[US]\]\s+)?(\d+(?:\.\d+)?)\s+(EML|AML)\b(?:\s+(?:Tablet|Injection|Ointment|Powder|Syrup|Other))?\s*(?:(?:\S+\s+){0,8}?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule|100)\s+)?(\d+)\s+(\d+)/g;
   const totals = {}; // code -> summed active qty
   let m, rowCount = 0;
   while((m = re.exec(norm)) !== null){
-    const code = m[1];
-    const qty = parseInt(m[3], 10) || 0;
+    const code = m[2];
+    const qty = parseInt(m[4], 10) || 0;
     totals[code] = (totals[code] || 0) + qty;
     rowCount++;
   }
