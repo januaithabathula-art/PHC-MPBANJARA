@@ -7,10 +7,18 @@
 // to change — the new PHC's link and its own private data start working
 // immediately.
 const FACILITIES = {
-  "mpbanjara": "PHC MP Banjara",
-  "sulanagar": "PHC Sulanagar",
-  "manuguru":  "PHC Manuguru",
-  "aswapuram": "PHC Aswapuram"
+  "mpbanjara":   "PHC MP Banjara",
+  "sulanagar":   "PHC Sulanagar",
+  "manuguru":    "PHC Manuguru",
+  "aswapuram":   "PHC Aswapuram",
+  "narasapuram": "PHC Narasapuram",
+  "dummugudem":  "PHC Dummugudem",
+  "snpuram":     "PHC SN Puram",
+  "parnasala":   "PHC Parnasala",
+  "charla":      "PHC Charla",
+  "pinapaka":    "PHC Pinapaka",
+  "janampeta":   "PHC Janampeta",
+  "karakagudem": "PHC Karakagudem"
 };
 
 // One PIN per PHC — used on that PHC's own "Manage list" screen to unlock
@@ -19,9 +27,17 @@ const FACILITIES = {
 // Code on the left MUST exactly match a code above. 4-6 digits recommended.
 // If a PHC is missing here, it falls back to the DEFAULT_PIN below.
 const FACILITY_PINS = {
-  "mpbanjara": "1947",
-  "sulanagar": "2201",
-  "manuguru":  "3315",
-  "aswapuram": "2025"
+  "mpbanjara":   "1947",
+  "sulanagar":   "2201",
+  "manuguru":    "3315",
+  "aswapuram":   "2025",
+  "narasapuram": "4101",
+  "dummugudem":  "4102",
+  "snpuram":     "4103",
+  "parnasala":   "4104",
+  "charla":      "4105",
+  "pinapaka":    "4106",
+  "janampeta":   "4107",
+  "karakagudem": "4108"
 };
 const DEFAULT_PIN = "1947"; // used only if a PHC code isn't listed above
