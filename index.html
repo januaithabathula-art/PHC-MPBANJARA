@@ -488,25 +488,44 @@ document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
 
 function processExtractedText(text){
   const norm = text.replace(/\s+/g, ' ');
-  // Matches: [CODE][U-or-S]  CODE  TYPE  ......  RATE/UNIT  QTY_ACTIVE  QTY_TOTAL  VALUE
-  const re = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
   const totals = {}; // code -> summed active qty
-  let m, rowCount = 0;
-  while((m = re.exec(norm)) !== null){
+  let rowCount = 0;
+
+  // Format A: "Stock In Hand Report" — e.g.
+  // "Aceclofenac 100mg Tab [2193][U] 2193 AML Tablet 13000 13000"
+  // code, then repeated code, then a word (type/category), then two qty numbers.
+  // We take the first of the two numbers (Qty. Ready for Issue).
+  const reA = /\[(\d+(?:\.\d+)?)\]\s*\[[^\]]*\]\s+\1\s+[A-Za-z][A-Za-z ,\/\-]*?\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\b/g;
+  let m;
+  while((m = reA.exec(norm)) !== null){
     const code = m[1];
-    const qty = parseInt(m[3], 10) || 0;
-    totals[code] = (totals[code] || 0) + qty;
-    rowCount++;
+    const qty = parseInt(m[2], 10) || 0;
+    // only count it if this code is actually one of our known drugs —
+    // this automatically skips surgical/consumable/misc items without
+    // needing to read the AML/EML/GC label at all.
+    if(CODE_LOOKUP[code]){
+      totals[code] = (totals[code] || 0) + qty;
+      rowCount++;
+    }
+  }
+
+  // Format B: older batch/expiry-style report — e.g.
+  // "[1188][U] 1188 EML ... 6.18/ No. 1975 1975 12205.5"
+  if(rowCount === 0){
+    const reB = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
+    while((m = reB.exec(norm)) !== null){
+      const code = m[1];
+      const qty = parseInt(m[3], 10) || 0;
+      totals[code] = (totals[code] || 0) + qty;
+      rowCount++;
+    }
   }
 
   const matched = []; // {id, name, qty}
-  const unmatchedCodes = [];
   Object.keys(totals).forEach(code=>{
     const hits = CODE_LOOKUP[code];
     if(hits && hits.length){
       hits.forEach(h=> matched.push({id: h.id, name: h.name, qty: totals[code]}));
-    } else {
-      unmatchedCodes.push(code);
     }
   });
 
@@ -527,9 +546,6 @@ function processExtractedText(text){
       <span>${d.name}</span><b>${d.qty}</b></div>`;
   });
   html += '</div>';
-  if(unmatchedCodes.length){
-    html += `<p style="margin-top:10px;color:#93a29c;font-size:.78rem;">${unmatchedCodes.length} item codes in the PDF didn't match anything in your drug list (likely surgical/consumable items, not medicines) — these were skipped.</p>`;
-  }
   body.innerHTML = html;
   document.getElementById('confirmImportBtn').disabled = matched.length === 0;
 }
@@ -567,10 +583,10 @@ function printStockList(){
     const lbl = CAT_LABELS[cat];
     totalAvail += items.length;
     bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
-    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Qty</th></tr></thead><tbody>';
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Code</th><th>Qty</th></tr></thead><tbody>';
     items.forEach((it,i)=>{
       const q = getQty(it.id);
-      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${it.code}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
     });
     bodyHtml += '</tbody></table>';
   });
