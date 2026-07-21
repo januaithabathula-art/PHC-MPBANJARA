@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>సంరక్షణ ప్రయాణం — PHC MP Banjara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-a:#0B3D3A; --bg-b:#0F5048;
+    --gold:#E8A33D; --coral:#F2637B; --rose:#D97BA8; --sky:#5FA8D3;
+    --text:#F7F3E8; --muted:#9DC2B8; --line: rgba(247,243,232,0.16);
+    --panel: rgba(7,30,28,0.55);
+    --act-accent: var(--rose);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ width:100%; height:100%; overflow:hidden; background:var(--bg-a); font-family:'Sora','Noto Sans Telugu', sans-serif; color:var(--text); }
+  body{
+    background:
+      radial-gradient(ellipse 120% 80% at 20% -10%, color-mix(in srgb, var(--act-accent) 14%, transparent), transparent 55%),
+      radial-gradient(ellipse 100% 70% at 100% 110%, rgba(242,99,123,0.06), transparent 50%),
+      linear-gradient(160deg, var(--bg-a), var(--bg-b) 60%, var(--bg-a));
+    background-size:200% 200%; animation: drift 46s ease-in-out infinite;
+    position:relative; height:100vh; width:100vw; transition: background 1.4s ease;
+  }
+  @keyframes drift{ 0%,100%{background-position:0% 0%;} 50%{background-position:100% 100%;} }
+
+  .particles{position:fixed; inset:0; pointer-events:none; z-index:1;}
+  .particle{ position:absolute; border-radius:50%; filter: blur(1px); animation: float linear infinite;
+    background: radial-gradient(circle, color-mix(in srgb, var(--act-accent) 55%, transparent), transparent 70%); }
+  @keyframes float{ 0%{transform:translateY(0) translateX(0); opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{transform:translateY(-110vh) translateX(30px); opacity:0;} }
+
+  #loading{ position:fixed; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; background:var(--bg-a); }
+  #loading .mark{ font-family:'Fraunces','Noto Sans Telugu', serif; font-weight:600; font-size:clamp(24px,3.4vw,40px); text-align:center; max-width:80vw; }
+  #loading .sub{ color:var(--muted); font-size:15px; letter-spacing:0.02em; }
+  .pulse-dot{ width:10px; height:10px; border-radius:50%; background:var(--gold); animation:pulse 1.3s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(1.8); opacity:0.4;} }
+
+  #stage{ position:relative; z-index:2; width:100vw; height:100vh; display:flex; flex-direction:column; opacity:0; transition:opacity 1s ease; }
+  #stage.ready{opacity:1;}
+
+  header.top{ display:flex; align-items:center; justify-content:space-between; padding: clamp(14px,2.4vh,26px) clamp(24px,5vw,64px) 0; }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.14em; color:var(--act-accent); transition:color 0.8s ease; }
+  .brand .name{ font-family:'Fraunces','Noto Sans Telugu', serif; font-weight:600; font-size:clamp(17px,2vw,22px); }
+  .clock{ font-family:'JetBrains Mono', monospace; color:var(--muted); font-size:13px; text-align:right; }
+
+  .act-strip{ display:flex; gap:28px; padding: 10px clamp(24px,5vw,64px) 0; align-items:center; }
+  .act-chip{ display:flex; align-items:center; gap:8px; font-family:'Sora','Noto Sans Telugu',sans-serif; font-size:12px;
+    letter-spacing:0.02em; color:var(--muted); opacity:0.5; transition: all 0.5s ease; }
+  .act-chip .num{ width:20px; height:20px; border-radius:50%; border:1px solid var(--muted); display:flex; align-items:center; justify-content:center; font-size:10px; font-family:'JetBrains Mono',monospace; flex-shrink:0; }
+  .act-chip.active{ opacity:1; color:var(--text); }
+  .act-chip.active .num{ background:var(--act-accent); border-color:var(--act-accent); color:#0B1F1C; }
+  .act-chip.done{ opacity:0.75; color:var(--act-accent); }
+
+  main.slideshow{ flex:1; display:flex; align-items:center; justify-content:center; position:relative; padding: 0 clamp(24px,6vw,90px); }
+
+  .slide{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none;
+    transform: scale(0.97); transition: opacity 1.1s cubic-bezier(.4,0,.2,1), transform 1.3s cubic-bezier(.4,0,.2,1); }
+  .slide.active{ opacity:1; pointer-events:auto; transform:scale(1); }
+  .slide-inner{ display:grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(28px,5vw,80px); align-items:center; max-width:1400px; width:100%; }
+  @media (max-aspect-ratio: 1/1){ .slide-inner{ grid-template-columns:1fr; text-align:center; } }
+
+  .stage-block .eyebrow{ font-family:'JetBrains Mono', monospace; color:var(--act-accent); font-size:13px; letter-spacing:0.1em; transition:color 0.8s ease; }
+  .stage-block .headline{ font-family:'Fraunces','Noto Sans Telugu', serif; font-weight:700; font-size: clamp(32px, 4.8vw, 68px); line-height:1.1; margin: 6px 0 14px;
+    background: linear-gradient(120deg, var(--text) 40%, var(--act-accent)); -webkit-background-clip:text; background-clip:text; transition: background 0.8s ease; }
+  .stage-block .why{ font-size: clamp(15px,1.5vw,19px); color:var(--muted); max-width:48ch; line-height:1.7; }
+
+  .vax-list{ display:flex; flex-direction:column; gap:11px; }
+  .vax-item{ display:flex; align-items:baseline; gap:16px; padding: 13px 20px; border:1px solid var(--line);
+    border-left: 3px solid var(--act-accent); border-radius: 6px; background: var(--panel); backdrop-filter: blur(6px);
+    opacity:0; transform: translateX(18px); animation: reveal 0.7s ease forwards; transition: border-color 0.8s ease; }
+  .vax-item .code{ font-family:'JetBrains Mono','Noto Sans Telugu', monospace; font-size:12px; color:var(--act-accent); min-width:64px; transition:color 0.8s ease; }
+  .vax-item .full{ font-size: clamp(15px,1.5vw,18px); font-weight:500; line-height:1.4; }
+  @keyframes reveal{ to{ opacity:1; transform:translateX(0);} }
+
+  .narration{ margin-top:18px; font-size: clamp(14px,1.3vw,16px); color:var(--text); opacity:0.92; line-height:1.7; max-width:60ch;
+    border-top:1px solid var(--line); padding-top:14px; }
+  .narration .tag{ font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:0.1em; color:var(--act-accent); display:block; margin-bottom:6px; transition:color 0.8s ease; }
+
+  .journey{ position:relative; z-index:2; padding: 0 clamp(24px,5vw,64px) clamp(14px,2.4vh,24px); }
+  .journey svg{ width:100%; height:56px; display:block; }
+  .journey .track{ fill:none; stroke:var(--line); stroke-width:2; }
+  .journey .progress{ fill:none; stroke:var(--act-accent); stroke-width:2; transition: stroke-dashoffset 0.6s ease, stroke 0.8s ease; }
+  .stop-dot{ fill:var(--bg-a); stroke:var(--muted); stroke-width:2; }
+  .stop-dot.done{ fill:var(--act-accent); stroke:var(--act-accent); }
+  .stop-dot.current{ fill:var(--coral); stroke:var(--coral); }
+
+  .controls{ position:fixed; bottom:22px; right:26px; z-index:10; display:flex; gap:10px; align-items:center; }
+  .ctrl-btn{ width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--panel); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(6px); font-size:16px; transition: background 0.2s, transform 0.2s; }
+  .ctrl-btn:hover{ background:rgba(232,163,61,0.18); transform:scale(1.06); }
+  .ctrl-btn.active{ border-color:var(--act-accent); color:var(--act-accent); }
+  .ctrl-btn.lang-btn{ width:auto; padding:0 16px; border-radius:22px; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.04em; }
+
+  .ask-panel{ position:fixed; bottom:22px; left:26px; z-index:10; max-width: min(420px, 40vw); }
+  .ask-toggle{ font-family:'Sora','Noto Sans Telugu',sans-serif; font-size:12px; letter-spacing:0.01em; color:var(--muted);
+    background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:9px 16px; cursor:pointer; backdrop-filter:blur(6px); }
+  .ask-box{ display:none; margin-top:10px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; backdrop-filter:blur(8px); }
+  .ask-box.open{ display:block; }
+  .ask-box input{ width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--line); background:rgba(0,0,0,0.2); color:var(--text);
+    font-family:'Sora','Noto Sans Telugu',sans-serif; font-size:14px; outline:none; }
+  .ask-box input:focus{ border-color:var(--act-accent); }
+  .ask-answer{ margin-top:10px; font-size:13px; color:var(--muted); line-height:1.6; min-height:18px; }
+  .ask-answer.loading::after{ content:'…'; animation:pulse 1s infinite; }
+
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;} }
+</style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div id="loading">
+  <div class="mark" id="loading-mark">సంరక్షణ ప్రయాణం<br>గర్భధారణ నుండి ఐదేళ్ల వరకు</div>
+  <div class="sub" id="loading-sub">AI కథనం సిద్ధమవుతోంది…</div>
+  <div class="pulse-dot"></div>
+</div>
+
+<div id="stage">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">PHC MP Banjara · NHM Telangana</span>
+      <span class="name" id="brand-name">సంరక్షణ ప్రయాణం</span>
+    </div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <div class="act-strip" id="act-strip"></div>
+
+  <main class="slideshow" id="slideshow"></main>
+
+  <div class="journey">
+    <svg viewBox="0 0 1400 60" preserveAspectRatio="none" id="journey-svg">
+      <path class="track" id="track-path" d="M20,30 L1380,30"></path>
+      <path class="progress" id="progress-path" d="M20,30 L1380,30"></path>
+      <g id="stops"></g>
+    </svg>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn lang-btn" id="btn-lang" title="Switch language">EN</button>
+  <button class="ctrl-btn active" id="btn-sound" title="Toggle narration">🔊</button>
+  <button class="ctrl-btn" id="btn-play" title="Pause / play">⏸</button>
+</div>
+
+<div class="ask-panel">
+  <button class="ask-toggle" id="ask-toggle">ఈ దశ గురించి అడగండి</button>
+  <div class="ask-box" id="ask-box">
+    <input type="text" id="ask-input" placeholder="ఉదా: 2వ ANC తనిఖీలో ఏమి జరుగుతుంది?">
+    <div class="ask-answer" id="ask-answer"></div>
+  </div>
+</div>
+
+<script>
+/* ================= UI strings ================= */
+const UI = {
+  te: { title:"సంరక్షణ ప్రయాణం", loadingMark:"సంరక్షణ ప్రయాణం<br>గర్భధారణ నుండి ఐదేళ్ల వరకు", loadingSub:"AI కథనం సిద్ధమవుతోంది…",
+        narrationTag:"AI కథనం", askToggle:"ఈ దశ గురించి అడగండి", askPlaceholder:"ఉదా: 2వ ANC తనిఖీలో ఏమి జరుగుతుంది?",
+        askFail:"క్షమించండి, ఇప్పుడు సమాధానం దొరకలేదు — దయచేసి PHC సిబ్బందిని అడగండి.", langBtn:"EN", speechLang:"te-IN" },
+  en: { title:"A Journey of Care", loadingMark:"A Journey of Care<br>Conception to Five Years", loadingSub:"Preparing AI narration…",
+        narrationTag:"AI narration", askToggle:"Ask about this stage", askPlaceholder:"e.g. What happens at the 2nd ANC visit?",
+        askFail:"Sorry, couldn't find an answer just now — please ask the PHC staff.", langBtn:"తె", speechLang:"en-IN" }
+};
+
+/* ================= Acts ================= */
+const ACTS = {
+  te: [ {name:"గర్భధారణ", accent:"#D97BA8"}, {name:"జననం", accent:"#E8A33D"}, {name:"ఎదుగుదల", accent:"#5FA8D3"} ],
+  en: [ {name:"Expecting", accent:"#D97BA8"}, {name:"Arrival", accent:"#E8A33D"}, {name:"Growing Strong", accent:"#5FA8D3"} ]
+};
+
+/* ================= Schedule (English) ================= */
+const SCHEDULE_EN = [
+  { act:0, age:"Conception", eyebrow:"1", why:"The journey begins. Early registration at the PHC or sub-centre lets ASHA and ANM workers start care from week one.",
+    vaccines:[ {code:"Reg", full:"Pregnancy registration — as soon as pregnancy is suspected"} ] },
+  { act:0, age:"ANC Visit 1 (by 12 wks)", eyebrow:"2", why:"The first checkup confirms the pregnancy is progressing well and screens for early risks.",
+    vaccines:[ {code:"Reg+", full:"Weight, BP, Hb, blood group & urine test"}, {code:"Td-1", full:"Td-1 (Tetanus-diphtheria) injection"}, {code:"IFA", full:"Iron & Folic Acid tablets started"}, {code:"USG", full:"Early ultrasound scan"} ] },
+  { act:0, age:"ANC Visit 2 (14–26 wks)", eyebrow:"3", why:"Mid-pregnancy checks track the baby's growth and the mother's nutrition and sugar levels.",
+    vaccines:[ {code:"Td-2", full:"Td-2 injection"}, {code:"Anomaly", full:"Anomaly scan (18–20 weeks)"}, {code:"GDM", full:"Blood sugar screening"}, {code:"IFA", full:"Continued Iron & Folic Acid, calcium"} ] },
+  { act:0, age:"ANC Visit 3 (28–34 wks)", eyebrow:"4", why:"As the due date nears, checks focus on the baby's position, growth and the mother's haemoglobin.",
+    vaccines:[ {code:"Hb", full:"Haemoglobin recheck, anaemia correction if needed"}, {code:"Growth", full:"Foetal growth & position check"}, {code:"BP+", full:"Danger-sign counselling (BP, swelling, bleeding)"} ] },
+  { act:0, age:"ANC Visit 4 (36 wks–delivery)", eyebrow:"5", why:"The final visit prepares the family for a safe, planned, institutional delivery.",
+    vaccines:[ {code:"Plan", full:"Birth preparedness & delivery plan finalised"}, {code:"Ref", full:"High-risk referral if needed"} ] },
+  { act:1, age:"Delivery", eyebrow:"6", why:"A safe, institutional delivery at the hospital, attended by skilled staff, protects both mother and baby.",
+    vaccines:[ {code:"Del", full:"Institutional delivery under skilled care"}, {code:"EBF", full:"Breastfeeding initiated within 1 hour"}, {code:"Vit-K", full:"Vitamin K injection for the newborn"} ] },
+  { act:1, age:"At Birth", eyebrow:"7", why:"Before leaving the facility, three vaccines begin the child's own immunity journey.",
+    vaccines:[ {code:"BCG", full:"BCG — protects against severe childhood TB"}, {code:"OPV-0", full:"OPV-0 — first dose against polio"}, {code:"Hep B-0", full:"Hepatitis B (birth dose)"} ] },
+  { act:2, age:"6 Weeks", eyebrow:"8", why:"The first full round of childhood vaccines begins as maternal immunity starts to fade.",
+    vaccines:[ {code:"OPV-1", full:"OPV-1 — polio"}, {code:"Penta-1", full:"Pentavalent-1 — DPT, Hep B, Hib"}, {code:"RVV-1", full:"Rotavirus-1"}, {code:"fIPV-1", full:"Fractional IPV-1"}, {code:"PCV-1", full:"PCV-1 — pneumococcal disease"} ] },
+  { act:2, age:"10 Weeks", eyebrow:"9", why:"The second round builds on the protection started at six weeks.",
+    vaccines:[ {code:"OPV-2", full:"OPV-2"}, {code:"Penta-2", full:"Pentavalent-2"}, {code:"RVV-2", full:"Rotavirus-2"}, {code:"PCV-2", full:"PCV-2"} ] },
+  { act:2, age:"14 Weeks", eyebrow:"10", why:"The primary vaccine series is completed, giving core protection before the first year.",
+    vaccines:[ {code:"OPV-3", full:"OPV-3"}, {code:"Penta-3", full:"Pentavalent-3"}, {code:"RVV-3", full:"Rotavirus-3"}, {code:"fIPV-2", full:"Fractional IPV-2"}, {code:"PCV-3", full:"PCV-3"} ] },
+  { act:2, age:"9–12 Months", eyebrow:"11", why:"As the child explores the world more, protection extends to measles and, in endemic areas, encephalitis.",
+    vaccines:[ {code:"MR-1", full:"Measles-Rubella-1"}, {code:"JE-1*", full:"Japanese Encephalitis-1 (endemic districts)"}, {code:"PCV-B", full:"PCV Booster"}, {code:"Vit-A", full:"Vitamin A — 1st dose"} ] },
+  { act:2, age:"16–24 Months", eyebrow:"12", why:"Booster doses lock in long-term immunity through the toddler years.",
+    vaccines:[ {code:"MR-2", full:"Measles-Rubella-2"}, {code:"JE-2*", full:"Japanese Encephalitis-2 (endemic districts)"}, {code:"DPT-B1", full:"DPT Booster-1"}, {code:"OPV-B", full:"OPV Booster"}, {code:"Vit-A", full:"Vitamin A — every 6 months till age 5"} ] },
+  { act:2, age:"5–6 Years", eyebrow:"13", why:"A booster before school years completes the child's core immunity, five years after the journey began.",
+    vaccines:[ {code:"DPT-B2", full:"DPT Booster-2"} ] },
+];
+
+/* ================= Schedule (Telugu) ================= */
+const SCHEDULE_TE = [
+  { act:0, age:"గర్భం దాల్చడం", eyebrow:"1", why:"ప్రయాణం ఇక్కడ మొదలవుతుంది. గర్భం అనుమానం వచ్చిన వెంటనే నమోదు చేసుకుంటే ఆశా, ఏఎన్ఎం సిబ్బంది మొదటి వారం నుండే సంరక్షణ అందిస్తారు.",
+    vaccines:[ {code:"నమోదు", full:"గర్భం అనుమానం వచ్చిన వెంటనే నమోదు చేసుకోవడం"} ] },
+  { act:0, age:"1వ ANC తనిఖీ (12 వారాలలోపు)", eyebrow:"2", why:"మొదటి తనిఖీ గర్భం సవ్యంగా సాగుతుందో లేదో నిర్ధారిస్తుంది, తొలి దశ ప్రమాదాలను గుర్తిస్తుంది.",
+    vaccines:[ {code:"పరీక్షలు", full:"బరువు, రక్తపోటు, హిమోగ్లోబిన్, రక్త గ్రూప్ & మూత్ర పరీక్ష"}, {code:"Td-1", full:"Td-1 (టెటనస్-డిఫ్తీరియా) ఇంజెక్షన్"}, {code:"IFA", full:"ఐరన్ & ఫోలిక్ యాసిడ్ మాత్రలు ప్రారంభం"}, {code:"USG", full:"తొలి అల్ట్రాసౌండ్ స్కాన్"} ] },
+  { act:0, age:"2వ ANC తనిఖీ (14–26 వారాలు)", eyebrow:"3", why:"మధ్య గర్భధారణ తనిఖీలు శిశువు ఎదుగుదలను, తల్లి పోషణ, చక్కెర స్థాయిలను పరిశీలిస్తాయి.",
+    vaccines:[ {code:"Td-2", full:"Td-2 ఇంజెక్షన్"}, {code:"అనామలీ", full:"అనామలీ స్కాన్ (18–20 వారాలు)"}, {code:"GDM", full:"రక్తంలో చక్కెర పరీక్ష"}, {code:"IFA", full:"ఐరన్-ఫోలిక్ యాసిడ్, కాల్షియం కొనసాగింపు"} ] },
+  { act:0, age:"3వ ANC తనిఖీ (28–34 వారాలు)", eyebrow:"4", why:"ప్రసవ తేదీ దగ్గరవుతున్న కొద్దీ, శిశువు స్థానం, ఎదుగుదల, తల్లి హిమోగ్లోబిన్‌పై దృష్టి పెడతారు.",
+    vaccines:[ {code:"Hb", full:"హిమోగ్లోబిన్ మళ్ళీ పరీక్ష, అవసరమైతే రక్తహీనత చికిత్స"}, {code:"ఎదుగుదల", full:"శిశువు ఎదుగుదల & స్థానం పరిశీలన"}, {code:"హెచ్చరిక", full:"ప్రమాద సంకేతాలపై కౌన్సెలింగ్ (BP, వాపు, రక్తస్రావం)"} ] },
+  { act:0, age:"4వ ANC తనిఖీ (36 వారాల నుండి ప్రసవం వరకు)", eyebrow:"5", why:"చివరి తనిఖీ కుటుంబాన్ని సురక్షితమైన, ప్రణాళికాబద్ధమైన ఆసుపత్రి ప్రసవానికి సిద్ధం చేస్తుంది.",
+    vaccines:[ {code:"ప్రణాళిక", full:"ప్రసవ సన్నద్ధత & ప్రణాళిక ఖరారు"}, {code:"రెఫరల్", full:"అవసరమైతే హై-రిస్క్ రెఫరల్"} ] },
+  { act:1, age:"ప్రసవం", eyebrow:"6", why:"నైపుణ్యం కలిగిన సిబ్బంది సమక్షంలో ఆసుపత్రిలో సురక్షిత ప్రసవం తల్లి, శిశువు ఇద్దరినీ కాపాడుతుంది.",
+    vaccines:[ {code:"ప్రసవం", full:"నైపుణ్య సంరక్షణలో ఆసుపత్రి ప్రసవం"}, {code:"EBF", full:"1 గంటలోపు తల్లిపాలు ప్రారంభం"}, {code:"Vit-K", full:"నవజాత శిశువుకు విటమిన్-K ఇంజెక్షన్"} ] },
+  { act:1, age:"పుట్టిన వెంటనే", eyebrow:"7", why:"ఆసుపత్రి నుండి బయలుదేరే ముందు, మూడు వ్యాక్సిన్‌లు శిశువు సొంత రోగనిరోధక ప్రయాణాన్ని ప్రారంభిస్తాయి.",
+    vaccines:[ {code:"BCG", full:"BCG — తీవ్రమైన బాలల క్షయవ్యాధి నుండి రక్షణ"}, {code:"OPV-0", full:"OPV-0 — పోలియోకు మొదటి డోసు"}, {code:"Hep B-0", full:"హెపటైటిస్-బి (పుట్టిన వెంటనే డోసు)"} ] },
+  { act:2, age:"6 వారాలు", eyebrow:"8", why:"తల్లి నుండి వచ్చిన రోగనిరోధకత తగ్గుతున్న కొద్దీ, బాల్య వ్యాక్సిన్‌ల మొదటి పూర్తి రౌండ్ మొదలవుతుంది.",
+    vaccines:[ {code:"OPV-1", full:"OPV-1 — పోలియో"}, {code:"పెంటా-1", full:"పెంటావేలెంట్-1 — DPT, హెపటైటిస్-బి, Hib"}, {code:"RVV-1", full:"రోటావైరస్-1"}, {code:"fIPV-1", full:"ఫ్రాక్షనల్ IPV-1"}, {code:"PCV-1", full:"PCV-1 — న్యుమోకోకల్ వ్యాధి"} ] },
+  { act:2, age:"10 వారాలు", eyebrow:"9", why:"రెండో రౌండ్ ఆరు వారాల వద్ద మొదలైన రక్షణను మరింత బలపరుస్తుంది.",
+    vaccines:[ {code:"OPV-2", full:"OPV-2"}, {code:"పెంటా-2", full:"పెంటావేలెంట్-2"}, {code:"RVV-2", full:"రోటావైరస్-2"}, {code:"PCV-2", full:"PCV-2"} ] },
+  { act:2, age:"14 వారాలు", eyebrow:"10", why:"మొదటి సంవత్సరానికి ముందే ప్రధాన వ్యాక్సిన్ సిరీస్ పూర్తవుతుంది, ప్రధాన రక్షణను అందిస్తుంది.",
+    vaccines:[ {code:"OPV-3", full:"OPV-3"}, {code:"పెంటా-3", full:"పెంటావేలెంట్-3"}, {code:"RVV-3", full:"రోటావైరస్-3"}, {code:"fIPV-2", full:"ఫ్రాక్షనల్ IPV-2"}, {code:"PCV-3", full:"PCV-3"} ] },
+  { act:2, age:"9–12 నెలలు", eyebrow:"11", why:"శిశువు ప్రపంచాన్ని మరింత అన్వేషిస్తున్న కొద్దీ, తట్టు నుండి రక్షణ, కొన్ని జిల్లాల్లో మెదడువాపు వ్యాధి నుండి రక్షణ మొదలవుతుంది.",
+    vaccines:[ {code:"MR-1", full:"మీజిల్స్-రుబెల్లా-1"}, {code:"JE-1*", full:"జపనీస్ ఎన్సెఫలైటిస్-1 (వ్యాధి ఎక్కువగా ఉన్న జిల్లాల్లో)"}, {code:"PCV-B", full:"PCV బూస్టర్"}, {code:"విట్-A", full:"విటమిన్-A — 1వ డోసు"} ] },
+  { act:2, age:"16–24 నెలలు", eyebrow:"12", why:"బూస్టర్ డోసులు ఇప్పటివరకు ఇచ్చిన రక్షణను దీర్ఘకాలం స్థిరపరుస్తాయి.",
+    vaccines:[ {code:"MR-2", full:"మీజిల్స్-రుబెల్లా-2"}, {code:"JE-2*", full:"జపనీస్ ఎన్సెఫలైటిస్-2 (వ్యాధి ఎక్కువగా ఉన్న జిల్లాల్లో)"}, {code:"DPT-B1", full:"DPT బూస్టర్-1"}, {code:"OPV-B", full:"OPV బూస్టర్"}, {code:"విట్-A", full:"విటమిన్-A — 5 సంవత్సరాల వరకు ప్రతి 6 నెలలకు"} ] },
+  { act:2, age:"5–6 సంవత్సరాలు", eyebrow:"13", why:"పాఠశాల వయసుకు ముందు ఒక బూస్టర్‌తో పిల్లల ప్రధాన రోగనిరోధకత పూర్తవుతుంది — ప్రయాణం మొదలైన ఐదేళ్లకు.",
+    vaccines:[ {code:"DPT-B2", full:"DPT బూస్టర్-2"} ] },
+];
+
+/* ================= Fallback narration (used if the AI call fails) ================= */
+const FALLBACK_EN = [
+  "The journey of care begins the moment a pregnancy is suspected. Registering early at the health centre means an ASHA or ANM worker can start guiding the family from week one.",
+  "By twelve weeks, the first checkup confirms the pregnancy is healthy, records the mother's baseline health, and starts iron and folic acid tablets.",
+  "Between fourteen and twenty-six weeks, an anomaly scan checks the baby's development while a second tetanus-diphtheria dose and continued nutrition support the mother.",
+  "As the third trimester begins, checks focus on the baby's growth and position, while the mother's haemoglobin is rechecked to prevent anaemia.",
+  "In the final weeks before delivery, the family and health team finalise a safe delivery plan, watching closely for any danger signs.",
+  "At the hospital, a safe institutional delivery, immediate breastfeeding, and a Vitamin K injection give the newborn the strongest possible start.",
+  "Before leaving the facility, three vaccines begin the baby's own immunity journey — protecting against tuberculosis, polio and hepatitis B from day one.",
+  "By six weeks, the first full round of childhood vaccines begins, protecting against the diseases most dangerous in early infancy.",
+  "At ten weeks, a second round builds on the protection started earlier, strengthening the baby's growing immunity.",
+  "By fourteen weeks, the primary vaccine series is complete — the core shield every child needs is now in place.",
+  "Between nine and twelve months, as the baby explores the world more, measles protection begins, along with encephalitis protection in some districts.",
+  "Between sixteen and twenty-four months, booster doses lock in everything given so far, carrying protection through the toddler years.",
+  "At five to six years, a final booster completes the child's core immunity — five years of care, from the very first checkup to a strong, protected child.",
+];
+
+const FALLBACK_TE = [
+  "గర్భం అనుమానం వచ్చిన క్షణమే ఈ సంరక్షణ ప్రయాణం మొదలవుతుంది. ఆరోగ్య కేంద్రంలో త్వరగా నమోదు చేసుకుంటే ఆశా లేదా ఏఎన్ఎం కార్యకర్త మొదటి వారం నుండే కుటుంబానికి మార్గనిర్దేశం చేయగలరు.",
+  "పన్నెండు వారాలకు, మొదటి తనిఖీ గర్భం ఆరోగ్యంగా ఉందని నిర్ధారిస్తుంది, తల్లి ఆరోగ్య వివరాలు నమోదు చేస్తుంది, ఐరన్-ఫోలిక్ యాసిడ్ మాత్రలు ప్రారంభిస్తుంది.",
+  "పద్నాలుగు నుండి ఇరవై ఆరు వారాల మధ్య, అనామలీ స్కాన్ శిశువు ఎదుగుదలను పరిశీలిస్తుంది, రెండో టెటనస్-డిఫ్తీరియా డోసు, పోషణ తల్లికి తోడ్పడతాయి.",
+  "మూడో త్రైమాసికం మొదలవుతుండగా, తనిఖీలు శిశువు ఎదుగుదల, స్థానంపై దృష్టి పెడతాయి, రక్తహీనతను నివారించేందుకు తల్లి హిమోగ్లోబిన్ మళ్ళీ పరీక్షిస్తారు.",
+  "ప్రసవానికి ముందు చివరి వారాల్లో, కుటుంబం, ఆరోగ్య బృందం కలిసి సురక్షిత ప్రసవ ప్రణాళికను ఖరారు చేస్తారు, ప్రమాద సంకేతాలపై నిశితంగా గమనిస్తారు.",
+  "ఆసుపత్రిలో సురక్షిత ప్రసవం, వెంటనే తల్లిపాలు ఇవ్వడం, విటమిన్-K ఇంజెక్షన్ నవజాత శిశువుకు అత్యుత్తమ ఆరంభాన్ని అందిస్తాయి.",
+  "ఆసుపత్రి నుండి బయలుదేరే ముందు, మూడు వ్యాక్సిన్‌లు శిశువు సొంత రోగనిరోధక ప్రయాణాన్ని ప్రారంభిస్తాయి — క్షయవ్యాధి, పోలియో, హెపటైటిస్-బి నుండి మొదటి రోజు నుండే రక్షణ.",
+  "ఆరు వారాలకు, బాల్య వ్యాక్సిన్‌ల మొదటి పూర్తి రౌండ్ మొదలవుతుంది, తొలి శైశవదశలో అత్యంత ప్రమాదకరమైన వ్యాధుల నుండి రక్షణ కల్పిస్తుంది.",
+  "పది వారాలకు, రెండో రౌండ్ ముందు మొదలైన రక్షణపై నిర్మించి, శిశువు రోగనిరోధకతను మరింత బలపరుస్తుంది.",
+  "పద్నాలుగు వారాలకు, ప్రధాన వ్యాక్సిన్ సిరీస్ పూర్తవుతుంది — ప్రతి శిశువుకు అవసరమైన ప్రధాన రక్షణ ఇప్పుడు సిద్ధంగా ఉంది.",
+  "తొమ్మిది నుండి పన్నెండు నెలల మధ్య, శిశువు ప్రపంచాన్ని మరింత అన్వేషిస్తున్న కొద్దీ, తట్టు నుండి రక్షణ మొదలవుతుంది, కొన్ని జిల్లాల్లో మెదడువాపు వ్యాధి నుండి రక్షణ కూడా.",
+  "పదహారు నుండి ఇరవై నాలుగు నెలల మధ్య, బూస్టర్ డోసులు ఇప్పటివరకు ఇచ్చినదంతా స్థిరపరుస్తాయి, పసితనం అంతటా రక్షణను కొనసాగిస్తాయి.",
+  "ఐదు నుండి ఆరు సంవత్సరాలకు, చివరి బూస్టర్‌తో పిల్లల ప్రధాన రోగనిరోధకత పూర్తవుతుంది — మొదటి తనిఖీ నుండి బలమైన, సురక్షితమైన పిల్లవాడి వరకు ఐదేళ్ల సంరక్షణ.",
+];
+
+const SCHEDULE_BY_LANG = { en: SCHEDULE_EN, te: SCHEDULE_TE };
+const FALLBACK_BY_LANG = { en: FALLBACK_EN, te: FALLBACK_TE };
+const narrationCache = { en: FALLBACK_EN.slice(), te: FALLBACK_TE.slice() };
+const narrationFetched = { en:false, te:false };
+
+let lang = 'te';
+let current = 0;
+let playing = true;
+let soundOn = true;
+let slideTimer = null;
+const SLIDE_MS = 13500;
+const n = SCHEDULE_EN.length;
+
+/* ================= AI narration ================= */
+async function generateNarration(targetLang){
+  if(narrationFetched[targetLang]) return;
+  try{
+    const sched = SCHEDULE_BY_LANG[targetLang];
+    const payload = sched.map(s => ({ age: s.age, items: s.vaccines.map(v => v.full) }));
+    const languageName = targetLang === 'te' ? 'Telugu (native Telugu script, not transliteration)' : 'English';
+    const prompt = `You are writing spoken narration for a looping cinematic video shown on a smart-board TV in the waiting area of a rural Primary Health Centre in Telangana, India. It tells the full story of one family: from conception, through the 4 antenatal checkups, hospital delivery, and the child's immunization schedule up to age 5. Parents and pregnant women watch it passively. Write entirely in ${languageName}. For each stage below, write exactly one warm, reassuring, plain-language narration of 2 short sentences (spoken aloud, no jargon, no medical codes), told as a continuous story of care. Return ONLY a valid JSON array of strings, same order, no markdown fences, no extra text.\n\nStages:\n${JSON.stringify(payload, null, 2)}`;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1400, messages: [{ role: "user", content: prompt }] })
+    });
+    const data = await response.json();
+    const textBlock = (data.content || []).find(b => b.type === "text");
+    if(!textBlock) throw new Error("no text block");
+    const cleaned = textBlock.text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if(Array.isArray(parsed) && parsed.length === n){
+      narrationCache[targetLang] = parsed;
+    }
+  }catch(e){
+    console.warn("AI narration unavailable for", targetLang, "— using fallback.", e);
+  }finally{
+    narrationFetched[targetLang] = true;
+  }
+}
+
+/* ================= Build act strip ================= */
+const actStrip = document.getElementById('act-strip');
+function renderActStrip(){
+  actStrip.innerHTML = '';
+  ACTS[lang].forEach((a, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'act-chip'; chip.dataset.act = i;
+    chip.innerHTML = `<span class="num">${i+1}</span><span>${a.name}</span>`;
+    actStrip.appendChild(chip);
+  });
+}
+
+/* ================= Build slides ================= */
+const slideshow = document.getElementById('slideshow');
+function renderSlides(){
+  slideshow.innerHTML = '';
+  SCHEDULE_BY_LANG[lang].forEach((stop, i) => {
+    const el = document.createElement('div');
+    el.className = 'slide'; el.dataset.index = i;
+    el.innerHTML = `
+      <div class="slide-inner">
+        <div class="stage-block">
+          <span class="eyebrow">${lang==='te' ? 'దశ '+stop.eyebrow : 'Stop '+stop.eyebrow}</span>
+          <div class="headline">${stop.age}</div>
+          <div class="why">${stop.why}</div>
+        </div>
+        <div>
+          <div class="vax-list">
+            ${stop.vaccines.map((v,idx) => `
+              <div class="vax-item" style="animation-delay:${idx*0.12}s">
+                <span class="code">${v.code}</span><span class="full">${v.full}</span>
+              </div>`).join('')}
+          </div>
+          <div class="narration"><span class="tag">${UI[lang].narrationTag}</span><span class="narration-text"></span></div>
+        </div>
+      </div>`;
+    slideshow.appendChild(el);
+  });
+}
+
+/* ================= Journey path ================= */
+const stopsG = document.getElementById('stops');
+const svgWidth = 1400, margin = 20, usable = svgWidth - margin*2;
+const positions = Array.from({length:n}, (_, i) => margin + (usable * i) / (n-1));
+positions.forEach((x, i) => {
+  const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  dot.setAttribute("cx", x); dot.setAttribute("cy", 30); dot.setAttribute("r", 5.5);
+  dot.setAttribute("class", "stop-dot"); dot.dataset.index = i;
+  stopsG.appendChild(dot);
+});
+const progressPath = document.getElementById('progress-path');
+const totalLen = progressPath.getTotalLength();
+progressPath.style.strokeDasharray = totalLen;
+progressPath.style.strokeDashoffset = totalLen;
+
+function setAct(actIdx){
+  const act = ACTS[lang][actIdx];
+  document.documentElement.style.setProperty('--act-accent', act.accent);
+  document.querySelectorAll('.act-chip').forEach(chip => {
+    const idx = +chip.dataset.act;
+    chip.classList.toggle('active', idx === actIdx);
+    chip.classList.toggle('done', idx < actIdx);
+  });
+}
+
+function updateJourney(){
+  const frac = current / (n-1);
+  progressPath.style.strokeDashoffset = totalLen - (totalLen * frac);
+  document.querySelectorAll('.stop-dot').forEach(d => {
+    const idx = +d.dataset.index;
+    d.classList.toggle('done', idx < current);
+    d.classList.toggle('current', idx === current);
+  });
+  setAct(SCHEDULE_BY_LANG[lang][current].act);
+}
+
+function showSlide(i){
+  const slides = document.querySelectorAll('.slide');
+  slides.forEach(s => s.classList.remove('active'));
+  slides[i].classList.add('active');
+  const text = narrationCache[lang][i] || FALLBACK_BY_LANG[lang][i];
+  slides[i].querySelector('.narration-text').textContent = text;
+  slides[i].querySelectorAll('.vax-item').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = null; });
+  updateJourney();
+  speak(text);
+}
+
+function next(){ current = (current + 1) % n; showSlide(current); scheduleNext(); }
+function scheduleNext(){ clearTimeout(slideTimer); if(playing){ slideTimer = setTimeout(next, SLIDE_MS); } }
+
+function speak(text){
+  if(!soundOn || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = UI[lang].speechLang;
+  const voices = window.speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang === utter.lang) || voices.find(v => v.lang && v.lang.startsWith(lang));
+  if(match) utter.voice = match;
+  utter.rate = 0.92; utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
+}
+
+/* ================= Language toggle ================= */
+async function switchLanguage(){
+  lang = (lang === 'te') ? 'en' : 'te';
+  document.documentElement.lang = lang;
+  document.getElementById('btn-lang').textContent = UI[lang].langBtn;
+  document.getElementById('brand-name').textContent = UI[lang].title;
+  document.getElementById('ask-toggle').textContent = UI[lang].askToggle;
+  document.getElementById('ask-input').placeholder = UI[lang].askPlaceholder;
+  renderActStrip();
+  renderSlides();
+  showSlide(current);
+  if(!narrationFetched[lang]){
+    generateNarration(lang).then(() => {
+      if(document.documentElement.lang === lang){
+        const text = narrationCache[lang][current];
+        const activeSlide = document.querySelector('.slide.active .narration-text');
+        if(activeSlide) activeSlide.textContent = text;
+      }
+    });
+  }
+}
+document.getElementById('btn-lang').addEventListener('click', switchLanguage);
+
+/* ================= Other controls ================= */
+document.getElementById('btn-play').addEventListener('click', (e) => {
+  playing = !playing;
+  e.target.textContent = playing ? '⏸' : '▶';
+  e.target.classList.toggle('active', playing);
+  if(playing){ scheduleNext(); } else { clearTimeout(slideTimer); window.speechSynthesis.cancel(); }
+});
+document.getElementById('btn-sound').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.target.classList.toggle('active', soundOn);
+  e.target.textContent = soundOn ? '🔊' : '🔇';
+  if(!soundOn) window.speechSynthesis.cancel();
+});
+
+const askToggle = document.getElementById('ask-toggle');
+const askBox = document.getElementById('ask-box');
+const askInput = document.getElementById('ask-input');
+const askAnswer = document.getElementById('ask-answer');
+askToggle.addEventListener('click', () => { askBox.classList.toggle('open'); if(askBox.classList.contains('open')) askInput.focus(); });
+askInput.addEventListener('keydown', async (e) => {
+  if(e.key !== 'Enter' || !askInput.value.trim()) return;
+  const q = askInput.value.trim();
+  askAnswer.textContent = ''; askAnswer.classList.add('loading');
+  playing = false; clearTimeout(slideTimer);
+  try{
+    const languageName = lang === 'te' ? 'Telugu (native script)' : 'English';
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 350,
+        messages: [{ role: "user", content: `A pregnant woman or new parent at a rural Indian Primary Health Centre is watching a display about the pregnancy-to-childhood care journey and asks, in ${languageName}: "${q}". Answer in ${languageName}, in 2-3 short, plain-language sentences, warm and reassuring, no jargon. Base it on India's ANC guidelines and Universal Immunization Programme where relevant.` }] })
+    });
+    const data = await response.json();
+    const block = (data.content || []).find(b => b.type === 'text');
+    askAnswer.textContent = block ? block.text : UI[lang].askFail;
+  }catch(err){ askAnswer.textContent = UI[lang].askFail; }
+  askAnswer.classList.remove('loading');
+});
+
+document.getElementById('stage').addEventListener('click', (e) => {
+  if(e.target.closest('.controls') || e.target.closest('.ask-panel')) return;
+  document.getElementById('btn-play').click();
+});
+
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleString('en-IN', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+tickClock(); setInterval(tickClock, 30000);
+
+const particleWrap = document.getElementById('particles');
+for(let i=0;i<18;i++){
+  const p = document.createElement('div'); p.className = 'particle';
+  const size = 3 + Math.random()*6;
+  p.style.width = size+'px'; p.style.height = size+'px';
+  p.style.left = Math.random()*100+'vw'; p.style.bottom = '-10px';
+  p.style.animationDuration = (18 + Math.random()*20)+'s';
+  p.style.animationDelay = (Math.random()*20)+'s';
+  particleWrap.appendChild(p);
+}
+
+/* ================= Boot ================= */
+(async function boot(){
+  document.documentElement.lang = lang;
+  renderActStrip();
+  renderSlides();
+  setAct(0);
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+  await generateNarration(lang);
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('stage').classList.add('ready');
+  showSlide(0);
+  scheduleNext();
+})();
+</script>
+</body>
+</html>
