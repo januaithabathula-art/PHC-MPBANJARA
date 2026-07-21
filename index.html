@@ -297,7 +297,8 @@ function lowThreshold(cat){
 function catDuration(c){
   const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
-  return Math.min(60000, Math.max(9000, 6000 + n*260));
+  // at an easily readable pace
+  return Math.min(120000, Math.max(12000, 8000 + n*550));
 }
 
 function renderDisplay(){
@@ -349,7 +350,10 @@ function scheduleActivePanel(){
   const start = Date.now();
   const progressEl = document.getElementById('dvProgress');
   const panel = document.querySelector('.dv-panel.active .dv-grid');
-  const scrollDur = Math.max(1500, dur - 1800); // pause ~1.8s at bottom before switching
+  const holdStart = 2500; // pause ~2.5s at the top before scrolling begins
+  const holdEnd = 2500;   // pause ~2.5s at the bottom before switching
+  const scrollStart = holdStart;
+  const scrollEnd = Math.max(scrollStart + 1500, dur - holdEnd);
 
   function tick(){
     const elapsed = Date.now() - start;
@@ -357,7 +361,11 @@ function scheduleActivePanel(){
     if(panel){
       const maxScroll = panel.scrollHeight - panel.clientHeight;
       if(maxScroll > 4){
-        panel.scrollTop = maxScroll * Math.min(1, elapsed/scrollDur);
+        let frac;
+        if(elapsed <= scrollStart) frac = 0;
+        else if(elapsed >= scrollEnd) frac = 1;
+        else frac = (elapsed - scrollStart) / (scrollEnd - scrollStart);
+        panel.scrollTop = maxScroll * frac;
       }
     }
     if(elapsed < dur){
