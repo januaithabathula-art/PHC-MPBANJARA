@@ -298,7 +298,7 @@ function catDuration(c){
   const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
   // at an easily readable pace
-  return Math.min(120000, Math.max(12000, 8000 + n*550));
+  return Math.min(240000, Math.max(18000, 12000 + n*1000));
 }
 
 function renderDisplay(){
@@ -350,8 +350,8 @@ function scheduleActivePanel(){
   const start = Date.now();
   const progressEl = document.getElementById('dvProgress');
   const panel = document.querySelector('.dv-panel.active .dv-grid');
-  const holdStart = 2500; // pause ~2.5s at the top before scrolling begins
-  const holdEnd = 2500;   // pause ~2.5s at the bottom before switching
+  const holdStart = 4000; // pause 4s at the top before scrolling begins
+  const holdEnd = 4000;   // pause 4s at the bottom before switching
   const scrollStart = holdStart;
   const scrollEnd = Math.max(scrollStart + 1500, dur - holdEnd);
 
