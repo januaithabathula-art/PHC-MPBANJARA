@@ -35,8 +35,10 @@
   /* background motifs — per-act line art + animated motif */
   .bg-motif{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
   .motif-svg{ position:absolute; opacity:0; transition:opacity 1.4s ease; }
-  .motif-svg.active{ opacity:0.24; }
-  .m-line{ fill:none; stroke:var(--act-accent); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.8s ease; }
+  .motif-svg.active{ opacity:0.4; }
+  .motif-figure{ animation: motif-float 4.5s ease-in-out infinite; }
+  @keyframes motif-float{ 0%,100%{ transform:translateY(0px); } 50%{ transform:translateY(-14px); } }
+  .m-line{ fill:none; stroke:var(--act-accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.8s ease; }
   .m-line-soft{ fill:none; stroke:var(--muted); stroke-width:1.4; stroke-linecap:round; opacity:0.6; }
   .heartbeat-path{ stroke-dasharray: 1400; stroke-dashoffset:1400; animation: hb-sweep 7s linear infinite; }
   @keyframes hb-sweep{ to{ stroke-dashoffset:-1400; } }
@@ -134,7 +136,7 @@
   <svg class="motif-svg motif-0" viewBox="0 0 1600 200" preserveAspectRatio="none" style="left:0; top:40%; width:100vw; height:160px;">
     <path class="m-line heartbeat-path" d="M-100,100 L250,100 L285,55 L320,150 L355,80 L390,100 L1700,100"></path>
   </svg>
-  <svg class="motif-svg motif-0" viewBox="0 0 220 320" style="right:3%; bottom:0; width:20vw; min-width:180px; max-width:260px;">
+  <svg class="motif-svg motif-0 motif-figure" viewBox="0 0 220 320" style="right:4%; bottom:120px; width:24vw; min-width:210px; max-width:320px;">
     <circle class="m-line" cx="110" cy="55" r="30"></circle>
     <path class="m-line" d="M78,90 C60,140 55,190 75,230 C95,270 140,290 150,300"></path>
     <path class="m-line" d="M78,90 C120,95 158,130 152,190 C148,225 128,250 150,300"></path>
@@ -145,7 +147,7 @@
     <path class="m-line-soft" d="M0,230 L1600,230"></path>
     <circle class="m-line sun-arc" cx="800" cy="230" r="60"></circle>
   </svg>
-  <svg class="motif-svg motif-1" viewBox="0 0 220 260" style="right:3%; bottom:0; width:18vw; min-width:170px; max-width:240px;">
+  <svg class="motif-svg motif-1 motif-figure" viewBox="0 0 220 260" style="right:4%; bottom:120px; width:22vw; min-width:200px; max-width:300px;">
     <circle class="m-line" cx="95" cy="40" r="22"></circle>
     <path class="m-line" d="M60,78 C40,120 45,170 75,200 C100,225 140,230 150,260"></path>
     <ellipse class="m-line" cx="120" cy="150" rx="26" ry="18"></ellipse>
@@ -159,7 +161,7 @@
     <ellipse class="m-line-soft foot" cx="380" cy="120" rx="14" ry="22"></ellipse>
     <ellipse class="m-line-soft foot" cx="440" cy="150" rx="14" ry="22"></ellipse>
   </svg>
-  <svg class="motif-svg motif-2" viewBox="0 0 200 260" style="right:4%; bottom:0; width:16vw; min-width:150px; max-width:220px;">
+  <svg class="motif-svg motif-2 motif-figure" viewBox="0 0 200 260" style="right:5%; bottom:120px; width:20vw; min-width:180px; max-width:280px;">
     <path class="m-line" d="M100,260 L100,140"></path>
     <path class="m-line sprout-leaf" d="M100,170 C70,160 55,120 70,90 C90,120 100,150 100,170 Z"></path>
     <path class="m-line sprout-leaf" d="M100,170 C130,160 145,120 130,90 C110,120 100,150 100,170 Z"></path>
