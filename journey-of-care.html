@@ -32,6 +32,25 @@
     background: radial-gradient(circle, color-mix(in srgb, var(--act-accent) 55%, transparent), transparent 70%); }
   @keyframes float{ 0%{transform:translateY(0) translateX(0); opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{transform:translateY(-110vh) translateX(30px); opacity:0;} }
 
+  /* background motifs — per-act line art + animated motif */
+  .bg-motif{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .motif-svg{ position:absolute; opacity:0; transition:opacity 1.4s ease; }
+  .motif-svg.active{ opacity:0.24; }
+  .m-line{ fill:none; stroke:var(--act-accent); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.8s ease; }
+  .m-line-soft{ fill:none; stroke:var(--muted); stroke-width:1.4; stroke-linecap:round; opacity:0.6; }
+  .heartbeat-path{ stroke-dasharray: 1400; stroke-dashoffset:1400; animation: hb-sweep 7s linear infinite; }
+  @keyframes hb-sweep{ to{ stroke-dashoffset:-1400; } }
+  .sun-arc{ transform-origin:center bottom; animation: sun-rise 8s ease-in-out infinite; }
+  @keyframes sun-rise{ 0%,100%{ transform:translateY(6px); opacity:0.5; } 50%{ transform:translateY(-8px); opacity:1; } }
+  .foot{ animation: foot-fade 3.6s ease-in-out infinite; opacity:0.2; }
+  .foot:nth-child(2){ animation-delay:0.5s; } .foot:nth-child(3){ animation-delay:1s; }
+  .foot:nth-child(4){ animation-delay:1.5s; } .foot:nth-child(5){ animation-delay:2s; }
+  @keyframes foot-fade{ 0%,100%{ opacity:0.12; } 50%{ opacity:0.55; } }
+  .sprout-leaf{ transform-origin:bottom center; animation: sprout-sway 5s ease-in-out infinite; }
+  @keyframes sprout-sway{ 0%,100%{ transform:rotate(-3deg); } 50%{ transform:rotate(3deg); } }
+
+  .vax-item .icon{ font-size:19px; line-height:1; filter:saturate(0.8); }
+
   #loading{ position:fixed; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; background:var(--bg-a); }
   #loading .mark{ font-family:'Fraunces','Noto Sans Telugu', serif; font-weight:600; font-size:clamp(24px,3.4vw,40px); text-align:center; max-width:80vw; }
   #loading .sub{ color:var(--muted); font-size:15px; letter-spacing:0.02em; }
@@ -111,6 +130,41 @@
 </head>
 <body>
 
+<div class="bg-motif" id="bg-motif">
+  <svg class="motif-svg motif-0" viewBox="0 0 1600 200" preserveAspectRatio="none" style="left:0; top:40%; width:100vw; height:160px;">
+    <path class="m-line heartbeat-path" d="M-100,100 L250,100 L285,55 L320,150 L355,80 L390,100 L1700,100"></path>
+  </svg>
+  <svg class="motif-svg motif-0" viewBox="0 0 220 320" style="right:3%; bottom:0; width:20vw; min-width:180px; max-width:260px;">
+    <circle class="m-line" cx="110" cy="55" r="30"></circle>
+    <path class="m-line" d="M78,90 C60,140 55,190 75,230 C95,270 140,290 150,300"></path>
+    <path class="m-line" d="M78,90 C120,95 158,130 152,190 C148,225 128,250 150,300"></path>
+    <path class="m-line-soft" d="M95,192 C106,182 132,182 142,194"></path>
+  </svg>
+
+  <svg class="motif-svg motif-1" viewBox="0 0 1600 260" preserveAspectRatio="none" style="left:0; bottom:0; width:100vw; height:180px;">
+    <path class="m-line-soft" d="M0,230 L1600,230"></path>
+    <circle class="m-line sun-arc" cx="800" cy="230" r="60"></circle>
+  </svg>
+  <svg class="motif-svg motif-1" viewBox="0 0 220 260" style="right:3%; bottom:0; width:18vw; min-width:170px; max-width:240px;">
+    <circle class="m-line" cx="95" cy="40" r="22"></circle>
+    <path class="m-line" d="M60,78 C40,120 45,170 75,200 C100,225 140,230 150,260"></path>
+    <ellipse class="m-line" cx="120" cy="150" rx="26" ry="18"></ellipse>
+    <circle class="m-line" cx="122" cy="140" r="10"></circle>
+  </svg>
+
+  <svg class="motif-svg motif-2" viewBox="0 0 1600 200" preserveAspectRatio="none" style="left:0; bottom:0; width:100vw; height:150px;">
+    <ellipse class="m-line-soft foot" cx="200" cy="150" rx="14" ry="22"></ellipse>
+    <ellipse class="m-line-soft foot" cx="260" cy="120" rx="14" ry="22"></ellipse>
+    <ellipse class="m-line-soft foot" cx="320" cy="150" rx="14" ry="22"></ellipse>
+    <ellipse class="m-line-soft foot" cx="380" cy="120" rx="14" ry="22"></ellipse>
+    <ellipse class="m-line-soft foot" cx="440" cy="150" rx="14" ry="22"></ellipse>
+  </svg>
+  <svg class="motif-svg motif-2" viewBox="0 0 200 260" style="right:4%; bottom:0; width:16vw; min-width:150px; max-width:220px;">
+    <path class="m-line" d="M100,260 L100,140"></path>
+    <path class="m-line sprout-leaf" d="M100,170 C70,160 55,120 70,90 C90,120 100,150 100,170 Z"></path>
+    <path class="m-line sprout-leaf" d="M100,170 C130,160 145,120 130,90 C110,120 100,150 100,170 Z"></path>
+  </svg>
+</div>
 <div class="particles" id="particles"></div>
 
 <div id="loading">
@@ -265,6 +319,23 @@ const FALLBACK_TE = [
   "ఐదు నుండి ఆరు సంవత్సరాలకు, చివరి బూస్టర్‌తో పిల్లల ప్రధాన రోగనిరోధకత పూర్తవుతుంది — మొదటి తనిఖీ నుండి బలమైన, సురక్షితమైన పిల్లవాడి వరకు ఐదేళ్ల సంరక్షణ.",
 ];
 
+/* Icons by [stopIndex][vaccineIndex] — language-independent, mirrors SCHEDULE_EN/TE order */
+const ICONS = [
+  ["📋"],
+  ["🩺","💉","💊","🔍"],
+  ["💉","🔍","🩸","💊"],
+  ["🩸","📏","⚠️"],
+  ["📝","🚑"],
+  ["🏥","🤱","💉"],
+  ["🛡️","💧","💉"],
+  ["💧","💉","🛡️","💉","🛡️"],
+  ["💧","💉","🛡️","🛡️"],
+  ["💧","💉","🛡️","💉","🛡️"],
+  ["🛡️","🦟","🛡️","💊"],
+  ["🛡️","🦟","💉","💧","💊"],
+  ["💉"]
+];
+
 const SCHEDULE_BY_LANG = { en: SCHEDULE_EN, te: SCHEDULE_TE };
 const FALLBACK_BY_LANG = { en: FALLBACK_EN, te: FALLBACK_TE };
 const narrationCache = { en: FALLBACK_EN.slice(), te: FALLBACK_TE.slice() };
@@ -335,6 +406,7 @@ function renderSlides(){
           <div class="vax-list">
             ${stop.vaccines.map((v,idx) => `
               <div class="vax-item" style="animation-delay:${idx*0.12}s">
+                <span class="icon">${(ICONS[i] && ICONS[i][idx]) || '•'}</span>
                 <span class="code">${v.code}</span><span class="full">${v.full}</span>
               </div>`).join('')}
           </div>
@@ -367,6 +439,9 @@ function setAct(actIdx){
     const idx = +chip.dataset.act;
     chip.classList.toggle('active', idx === actIdx);
     chip.classList.toggle('done', idx < actIdx);
+  });
+  document.querySelectorAll('.motif-svg').forEach(svg => {
+    svg.classList.toggle('active', svg.classList.contains('motif-'+actIdx));
   });
 }
 
