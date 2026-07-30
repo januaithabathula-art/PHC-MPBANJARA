@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>PHC MP Banjara — Drug Availability Board</title>
+<title>PHC MP Banjara</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B5D4C">
 <style>
@@ -226,7 +226,7 @@ let availability = {}; // { id: true/false }  -- default true (available) if mis
 
 /* ---------------- clock ---------------- */
 document.getElementById('facilityName').textContent = FACILITY_NAME + ' — Medicines Available Today';
-document.title = FACILITY_NAME + ' — Drug Availability Board';
+document.title = FACILITY_NAME;
 
 function tickClock(){
   const now = new Date();
