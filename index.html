@@ -691,6 +691,7 @@ function renderAdmin(){
   let html = '';
 
   CAT_ORDER.forEach(c=>{
+    if(c === 'Drug-Reference') return; // reference-only, not real stock — no code/qty to edit
     const items = getCatItems(c).filter(it=>{
       if(!q) return true;
       return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
