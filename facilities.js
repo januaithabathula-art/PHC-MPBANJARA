@@ -17,7 +17,8 @@ const FACILITIES = {
   "charla":      "PHC Charla",
   "pinapaka":    "PHC Pinapaka",
   "janampeta":   "PHC Janampeta",
-  "karakagudem": "PHC Karakagudem"
+  "karakagudem": "PHC Karakagudem",
+  "BDS":         "Branch Drugs Store Bhadrachalam"
 };
 
 // One PIN per PHC — used on that PHC's own "Manage list" screen to unlock
@@ -36,7 +37,8 @@ const FACILITY_PINS = {
   "charla":      "4105",
   "pinapaka":    "4106",
   "janampeta":   "4107",
-  "karakagudem": "4108"
+  "karakagudem": "4108",
+  "BDS":         "2000"
 };
 const DEFAULT_PIN = "1947"; // used only if a PHC code isn't listed above
 
