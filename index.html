@@ -182,6 +182,7 @@
         <button onclick="document.getElementById('pdfFileInput').click()" style="background:var(--green);color:#fff;border-color:var(--green);">📄 Import e-Aushadhi PDF</button>
         <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
         <button onclick="printStockList()" style="background:var(--green-deep);color:#fff;border-color:var(--green-deep);">🖨️ Print available stock</button>
+        <button onclick="openLasaPairModal()" style="background:var(--amber);color:#fff;border-color:var(--amber);">⚠ Edit LASA pairs</button>
       </div>
     </div>
     <div id="catContainer"></div>
@@ -199,6 +200,32 @@
     <div style="padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end;">
       <button onclick="closeImportModal()" style="padding:8px 16px;border:1px solid var(--line);background:#fff;border-radius:8px;">Cancel</button>
       <button id="confirmImportBtn" onclick="confirmImport()" style="padding:8px 16px;border:none;background:var(--green);color:#fff;border-radius:8px;font-weight:700;" disabled>Import Quantities</button>
+    </div>
+  </div>
+</div>
+
+<!-- LASA pair editor modal -->
+<div id="lasaPairModal" style="display:none; position:fixed; inset:0; background:rgba(11,46,39,.55); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; max-width:560px; width:92%; max-height:85vh; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <b>⚠ Look-Alike / Sound-Alike Pairs</b>
+      <button onclick="closeLasaPairModal()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:14px 20px; overflow:auto; flex:1; font-size:.9rem;">
+      <b style="font-size:.85rem;">Add a new pair</b>
+      <div style="display:flex; flex-direction:column; gap:8px; margin:8px 0 16px;">
+        <input id="lpA" placeholder="Drug A (e.g. Clotrimazole cream)" style="padding:9px;border:1px solid var(--line);border-radius:7px;font-size:.9rem;">
+        <input id="lpB" placeholder="Drug B — confused with (e.g. Co-trimoxazole)" style="padding:9px;border:1px solid var(--line);border-radius:7px;font-size:.9rem;">
+        <input id="lpWhy" placeholder="Why it matters (e.g. antifungal vs antibiotic)" style="padding:9px;border:1px solid var(--line);border-radius:7px;font-size:.9rem;">
+        <select id="lpRisk" style="padding:9px;border:1px solid var(--line);border-radius:7px;font-size:.9rem;">
+          <option value="caution">Caution — same class / strength difference</option>
+          <option value="high">HIGH RISK — different drug classes</option>
+        </select>
+        <button onclick="addLasaPair()" style="padding:10px;background:var(--amber);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Add pair</button>
+        <div id="lpStatus" style="font-size:.8rem;color:var(--red);min-height:16px;"></div>
+      </div>
+      <b style="font-size:.85rem;">Pairs added by staff (all PHCs)</b>
+      <div id="customPairList" style="margin-top:8px;"></div>
     </div>
   </div>
 </div>
@@ -320,6 +347,62 @@ const LASA_PAIRS = [
   {a:'Fluconazole (oral)', b:'Miconazole (cream)', why:'Different routes', risk:'caution'}
 ];
 
+/* Custom pairs added by staff — stored in Firebase, shared by all PHCs */
+let customPairs = {}; // {pushId: {a,b,why,risk}}
+const lasaPairsRef = db.ref('lasaPairs');
+lasaPairsRef.on('value', snap=>{
+  customPairs = snap.val() || {};
+  renderDisplay();
+  renderCustomPairList();
+});
+
+function allLasaPairs(){
+  return LASA_PAIRS.concat(Object.values(customPairs));
+}
+
+function openLasaPairModal(){
+  document.getElementById('lasaPairModal').style.display = 'flex';
+  renderCustomPairList();
+}
+function closeLasaPairModal(){
+  document.getElementById('lasaPairModal').style.display = 'none';
+}
+function addLasaPair(){
+  const a = document.getElementById('lpA').value.trim();
+  const b = document.getElementById('lpB').value.trim();
+  const why = document.getElementById('lpWhy').value.trim();
+  const risk = document.getElementById('lpRisk').value;
+  if(!a || !b){
+    document.getElementById('lpStatus').textContent = 'Enter both drug names.';
+    return;
+  }
+  lasaPairsRef.push({a, b, why: why || 'Confusable pair', risk});
+  document.getElementById('lpA').value = '';
+  document.getElementById('lpB').value = '';
+  document.getElementById('lpWhy').value = '';
+  document.getElementById('lpStatus').textContent = '';
+}
+function deleteLasaPair(key){
+  lasaPairsRef.child(key).remove();
+}
+function renderCustomPairList(){
+  const el = document.getElementById('customPairList');
+  if(!el) return;
+  const keys = Object.keys(customPairs);
+  if(!keys.length){
+    el.innerHTML = '<p style="color:#93a29c;font-size:.82rem;">None added yet. Built-in pairs cannot be removed.</p>';
+    return;
+  }
+  el.innerHTML = keys.map(k=>{
+    const p = customPairs[k];
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid #EEF5F2;font-size:.85rem;">
+      <span><b>${p.a}</b> ↔ <b>${p.b}</b> <span style="color:#7c8d87;">— ${p.why}</span>
+        ${p.risk==='high' ? '<span style="color:var(--red);font-weight:700;"> [HIGH]</span>' : ''}</span>
+      <button onclick="deleteLasaPair('${k}')" style="border:1px solid var(--line);background:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;color:var(--red);">✕</button>
+    </div>`;
+  }).join('');
+}
+
 function lasaPosterHtml(){
   function pairCard(p){
     return `<div class="lasa-pair ${p.risk}">
@@ -327,8 +410,9 @@ function lasaPosterHtml(){
       <div class="why">${p.why}</div>
     </div>`;
   }
-  const high = LASA_PAIRS.filter(p=>p.risk==='high').map(pairCard).join('');
-  const caution = LASA_PAIRS.filter(p=>p.risk==='caution').map(pairCard).join('');
+  const pairs = allLasaPairs();
+  const high = pairs.filter(p=>p.risk==='high').map(pairCard).join('');
+  const caution = pairs.filter(p=>p.risk==='caution').map(pairCard).join('');
   return `<div style="max-width:900px;">
     <div class="lasa-section high">HIGH RISK — Different drug classes (dangerous if swapped)</div>
     ${high}
@@ -400,7 +484,7 @@ function lowThreshold(cat){
 function catDuration(c){
   if(c === 'LASA-Drugs'){
     // poster-style pairs need reading time: ~4s per pair
-    return Math.min(180000, 15000 + LASA_PAIRS.length * 4000);
+    return Math.min(180000, 15000 + allLasaPairs().length * 4000);
   }
   const n = getCatItems(c).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
