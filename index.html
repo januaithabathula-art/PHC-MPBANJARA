@@ -79,6 +79,8 @@
     text-align:center; flex:0 0 auto;}
   .qtybox.zero{border-color:var(--red); color:var(--red); background:#FDEDEC;}
   .dv-item .qty{display:block; font-size:.8rem; font-weight:500; color:var(--green); margin-top:2px;}
+  .lasa-badge{display:inline-block; font-size:.62rem; font-weight:800; color:#fff; background:var(--amber);
+    border-radius:4px; padding:1px 5px; margin-left:6px; vertical-align:middle; letter-spacing:.3px;}
   .dv-item.low{border-left-color:var(--red);}
   .dv-item.low .qty{color:var(--red); font-weight:700;}
   .slider{position:absolute; inset:0; background:#E0574A; border-radius:999px; cursor:pointer; transition:.2s;}
@@ -254,6 +256,10 @@ const CAT_LABELS = {
 };
 const CAT_ORDER = Object.keys(CAT_LABELS);
 
+/* Look-Alike Sound-Alike (LASA) drugs — flagged with a small badge so staff
+   double-check the name before dispensing. */
+const LASA_IDS = new Set(["AML_Injections_1355","AML_Injections_3221","AML_Injections_3301","AML_Injections_4284","AML_Ointment_4178","AML_Ointment_73","AML_Others_4276","AML_Syrup_1702","AML_Syrup_3257","AML_Syrup_3271","AML_Syrup_4006_5","AML_Syrup_4195","AML_Syrup_4279","AML_Syrup_4287","AML_Syrup_636","AML_Tablets_1642","AML_Tablets_2193","AML_Tablets_2216","AML_Tablets_3145","AML_Tablets_3241","AML_Tablets_4006","AML_Tablets_4162","AML_Tablets_4174","AML_Tablets_4175","AML_Tablets_4179","AML_Tablets_4188","AML_Tablets_4190","AML_Tablets_4264","AML_Tablets_4325","EML_Injections_1265","EML_Injections_1527","EML_Injections_198","EML_Injections_221_02","EML_Injections_2229","EML_Injections_3258","EML_Injections_3295","EML_Injections_4125","EML_Injections_440","EML_Injections_463","EML_Injections_579","EML_Injections_95","EML_Ointment_2209","EML_Ointment_3317","EML_Ointment_4108","EML_Ointment_4339","EML_Ointment_475","EML_Ointment_739_01","EML_Others_123","EML_Others_1426","EML_Others_1656","EML_Others_2605","EML_Others_3327","EML_Others_4152","EML_Powders_4107","EML_Syrup_2205","EML_Syrup_3260","EML_Syrup_3265","EML_Syrup_4006_6","EML_Syrup_4112","EML_Syrup_4113","EML_Syrup_4115","EML_Syrup_4148","EML_Syrup_8_1","EML_Syrup_98","EML_Tablets_1145","EML_Tablets_1162","EML_Tablets_1340","EML_Tablets_1341","EML_Tablets_1528","EML_Tablets_1621","EML_Tablets_1622","EML_Tablets_1759","EML_Tablets_197","EML_Tablets_1981","EML_Tablets_2065","EML_Tablets_2138","EML_Tablets_2208","EML_Tablets_2319","EML_Tablets_3237","EML_Tablets_3238","EML_Tablets_3273","EML_Tablets_3276","EML_Tablets_3294","EML_Tablets_3297","EML_Tablets_3303","EML_Tablets_3315","EML_Tablets_3366","EML_Tablets_4338","EML_Tablets_4343","EML_Tablets_438_01","EML_Tablets_482","EML_Tablets_576","EML_Tablets_577","EML_Tablets_6","EML_Tablets_7","EML_Tablets_741","EML_Tablets_94"]);
+
 /* ---------------- load availability from Firebase (realtime) ---------------- */
 availRef.on('value', snap => {
   availability = snap.val() || {};
@@ -329,7 +335,8 @@ function renderDisplay(){
           const qtyHtml = (typeof q === 'number')
             ? `<span class="qty">${q} in stock</span>`
             : '';
-          return `<div class="dv-item ${low?'low':''}">${it.name}${qtyHtml}</div>`;
+          const lasaHtml = LASA_IDS.has(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : '';
+          return `<div class="dv-item ${low?'low':''}">${it.name}${lasaHtml}${qtyHtml}</div>`;
         }).join('')
       : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
     return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
@@ -421,7 +428,7 @@ function renderAdmin(){
       html += `<div class="rowitem">
           <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
             placeholder="qty" value="${qVal}" oninput="setQty(this)">
-          <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
+          <span class="nm">${it.name}${LASA_IDS.has(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : ''}<span class="code">#${it.code}</span></span>
         </div>`;
     });
     html += `</div>`;
