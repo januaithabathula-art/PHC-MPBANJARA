@@ -81,6 +81,18 @@
   .dv-item .qty{display:block; font-size:.8rem; font-weight:500; color:var(--green); margin-top:2px;}
   .lasa-badge{display:inline-block; font-size:.62rem; font-weight:800; color:#fff; background:var(--amber);
     border-radius:4px; padding:1px 5px; margin-left:6px; vertical-align:middle; letter-spacing:.3px;}
+  /* LASA poster-style pair cards */
+  .lasa-section{font-size:1.15rem; font-weight:800; margin:14px 0 10px; padding-bottom:4px;
+    border-bottom:3px solid;}
+  .lasa-section.high{color:var(--red); border-color:var(--red);}
+  .lasa-section.caution{color:var(--green-deep); border-color:var(--green-deep);}
+  .lasa-pair{background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(11,46,39,.05);}
+  .lasa-pair.high{border-left:6px solid var(--red);}
+  .lasa-pair.caution{border-left:6px solid var(--amber);}
+  .lasa-pair .names{display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:1.08rem; font-weight:700;}
+  .lasa-pair .arrow{color:var(--red); font-size:1.2rem; font-weight:800;}
+  .lasa-pair .why{margin-top:5px; font-size:.88rem; color:#5a6d67;}
   .dv-item.low{border-left-color:var(--red);}
   .dv-item.low .qty{color:var(--red); font-weight:700;}
   .slider{position:absolute; inset:0; background:#E0574A; border-radius:999px; cursor:pointer; transition:.2s;}
@@ -252,13 +264,96 @@ const CAT_LABELS = {
   'AML-Syrup':{en:'AML · Syrups', te:'సిరప్‌లు'},
   'AML-Others':{en:'AML · Others', te:'ఇతరాలు'},
   'Surgical-Consumables':{en:'Surgical & Consumables', te:'శస్త్రచికిత్స సామాగ్రి'},
-  'NCD-Drugs':{en:'NCD Drugs (BP/Diabetes)', te:'ఎన్‌సీడీ మందులు'}
+  'NCD-Drugs':{en:'NCD Drugs (BP/Diabetes)', te:'ఎన్‌సీడీ మందులు'},
+  'LASA-Drugs':{en:'⚠ LASA Drugs', te:'ఒకేలా కనిపించే మందులు'}
 };
 const CAT_ORDER = Object.keys(CAT_LABELS);
 
 /* Look-Alike Sound-Alike (LASA) drugs — flagged with a small badge so staff
-   double-check the name before dispensing. */
-const LASA_IDS = new Set(["AML_Injections_1355","AML_Injections_3221","AML_Injections_3301","AML_Injections_4284","AML_Ointment_4178","AML_Ointment_73","AML_Others_4276","AML_Syrup_1702","AML_Syrup_3257","AML_Syrup_3271","AML_Syrup_4006_5","AML_Syrup_4195","AML_Syrup_4279","AML_Syrup_4287","AML_Syrup_636","AML_Tablets_1642","AML_Tablets_2193","AML_Tablets_2216","AML_Tablets_3145","AML_Tablets_3241","AML_Tablets_4006","AML_Tablets_4162","AML_Tablets_4174","AML_Tablets_4175","AML_Tablets_4179","AML_Tablets_4188","AML_Tablets_4190","AML_Tablets_4264","AML_Tablets_4325","EML_Injections_1265","EML_Injections_1527","EML_Injections_198","EML_Injections_221_02","EML_Injections_2229","EML_Injections_3258","EML_Injections_3295","EML_Injections_4125","EML_Injections_440","EML_Injections_463","EML_Injections_579","EML_Injections_95","EML_Ointment_2209","EML_Ointment_3317","EML_Ointment_4108","EML_Ointment_4339","EML_Ointment_475","EML_Ointment_739_01","EML_Others_123","EML_Others_1426","EML_Others_1656","EML_Others_2605","EML_Others_3327","EML_Others_4152","EML_Powders_4107","EML_Syrup_2205","EML_Syrup_3260","EML_Syrup_3265","EML_Syrup_4006_6","EML_Syrup_4112","EML_Syrup_4113","EML_Syrup_4115","EML_Syrup_4148","EML_Syrup_8_1","EML_Syrup_98","EML_Tablets_1145","EML_Tablets_1162","EML_Tablets_1340","EML_Tablets_1341","EML_Tablets_1528","EML_Tablets_1621","EML_Tablets_1622","EML_Tablets_1759","EML_Tablets_197","EML_Tablets_1981","EML_Tablets_2065","EML_Tablets_2138","EML_Tablets_2208","EML_Tablets_2319","EML_Tablets_3237","EML_Tablets_3238","EML_Tablets_3273","EML_Tablets_3276","EML_Tablets_3294","EML_Tablets_3297","EML_Tablets_3303","EML_Tablets_3315","EML_Tablets_3366","EML_Tablets_4338","EML_Tablets_4343","EML_Tablets_438_01","EML_Tablets_482","EML_Tablets_576","EML_Tablets_577","EML_Tablets_6","EML_Tablets_7","EML_Tablets_741","EML_Tablets_94"]);
+   double-check the name before dispensing. The list below is the starting
+   default; edits made in Manage list are stored in Firebase (shared across
+   ALL PHCs, since LASA is a property of the drug itself). */
+const LASA_DEFAULTS = new Set(["AML_Injections_1355","AML_Injections_3221","AML_Injections_3301","AML_Injections_4284","AML_Ointment_4178","AML_Ointment_73","AML_Others_4276","AML_Syrup_1702","AML_Syrup_3257","AML_Syrup_3271","AML_Syrup_4006_5","AML_Syrup_4195","AML_Syrup_4279","AML_Syrup_4287","AML_Syrup_636","AML_Tablets_1642","AML_Tablets_2193","AML_Tablets_2216","AML_Tablets_3145","AML_Tablets_3241","AML_Tablets_4006","AML_Tablets_4162","AML_Tablets_4174","AML_Tablets_4175","AML_Tablets_4179","AML_Tablets_4188","AML_Tablets_4190","AML_Tablets_4264","AML_Tablets_4325","EML_Injections_1265","EML_Injections_1527","EML_Injections_198","EML_Injections_221_02","EML_Injections_2229","EML_Injections_3258","EML_Injections_3295","EML_Injections_4125","EML_Injections_440","EML_Injections_463","EML_Injections_579","EML_Injections_95","EML_Ointment_2209","EML_Ointment_3317","EML_Ointment_4108","EML_Ointment_4339","EML_Ointment_475","EML_Ointment_739_01","EML_Others_123","EML_Others_1426","EML_Others_1656","EML_Others_2605","EML_Others_3327","EML_Others_4152","EML_Powders_4107","EML_Syrup_2205","EML_Syrup_3260","EML_Syrup_3265","EML_Syrup_4006_6","EML_Syrup_4112","EML_Syrup_4113","EML_Syrup_4115","EML_Syrup_4148","EML_Syrup_8_1","EML_Syrup_98","EML_Tablets_1145","EML_Tablets_1162","EML_Tablets_1340","EML_Tablets_1341","EML_Tablets_1528","EML_Tablets_1621","EML_Tablets_1622","EML_Tablets_1759","EML_Tablets_197","EML_Tablets_1981","EML_Tablets_2065","EML_Tablets_2138","EML_Tablets_2208","EML_Tablets_2319","EML_Tablets_3237","EML_Tablets_3238","EML_Tablets_3273","EML_Tablets_3276","EML_Tablets_3294","EML_Tablets_3297","EML_Tablets_3303","EML_Tablets_3315","EML_Tablets_3366","EML_Tablets_4338","EML_Tablets_4343","EML_Tablets_438_01","EML_Tablets_482","EML_Tablets_576","EML_Tablets_577","EML_Tablets_6","EML_Tablets_7","EML_Tablets_741","EML_Tablets_94"]);
+
+let lasaOverrides = {}; // Firebase: {id: true (added) / false (removed)} — shared by all PHCs
+const lasaRef = db.ref('lasaFlags');
+lasaRef.on('value', snap=>{
+  lasaOverrides = snap.val() || {};
+  renderDisplay();
+  if(document.getElementById('adminBody') && !document.getElementById('adminBody').classList.contains('hidden')) renderAdmin();
+});
+
+function isLasa(id){
+  if(id in lasaOverrides) return lasaOverrides[id] === true;
+  return LASA_DEFAULTS.has(id);
+}
+function toggleLasa(id){
+  lasaRef.child(id).set(!isLasa(id));
+}
+
+/* Items for a category — 'LASA-Drugs' is a virtual tab collecting every
+   flagged drug from all real categories (no duplicates). */
+/* LASA pairs shown poster-style on the LASA tab — Drug A ↔ Drug B with why */
+const LASA_PAIRS = [
+  {a:'Clotrimazole (antifungal cream/tab)', b:'Co-trimoxazole (antibiotic)', why:'Completely different drug classes', risk:'high'},
+  {a:'Adrenaline Injection', b:'Noradrenaline Injection', why:'Both emergency drugs — used in opposite situations', risk:'high'},
+  {a:'Betamethasone Ointment', b:'Dexamethasone Tab/Inj', why:'Different steroid potencies', risk:'high'},
+  {a:'Methyl Ergometrine Injection', b:'Ethyl Alcohol Solution', why:'Injection vs disinfectant', risk:'high'},
+  {a:'Benzoyl Peroxide Gel', b:'Benzyl Benzoate Application', why:'Acne gel vs scabies treatment', risk:'high'},
+  {a:'Pralidoxime Injection', b:'Pyridoxine Tab (Vit B6)', why:'Poisoning antidote vs vitamin', risk:'high'},
+  {a:'Carbimazole Tab (thyroid)', b:'Clotrimazole (antifungal)', why:'Completely different drug classes', risk:'high'},
+  {a:'Glycerol Solution', b:'Glyceryl Trinitrate Tab', why:'Laxative vs cardiac drug', risk:'high'},
+  {a:'Vitamin K1 (Phytomenadione)', b:'Vitamin K3 (Menadione)', why:'Different forms — K1 for newborns', risk:'high'},
+  {a:'Cefixime', b:'Cefotaxime / Cefpodoxime', why:'Similar cephalosporins, different routes and doses', risk:'caution'},
+  {a:'Ciprofloxacin', b:'Ofloxacin / Norfloxacin / Levofloxacin / Moxifloxacin', why:'Five similar fluoroquinolones', risk:'caution'},
+  {a:'Amoxicillin', b:'Ampicillin', why:'Similar penicillins, different dosing', risk:'caution'},
+  {a:'Cetirizine', b:'Levocetirizine / Cinnarizine', why:'Antihistamines vs vertigo drug', risk:'caution'},
+  {a:'Metronidazole', b:'Tinidazole', why:'Similar antiprotozoals, different doses', risk:'caution'},
+  {a:'Prednisolone', b:'Methylprednisolone', why:'Different steroid strengths', risk:'caution'},
+  {a:'Sitagliptin', b:'Vildagliptin', why:'Different diabetes gliptins', risk:'caution'},
+  {a:'Atorvastatin', b:'Rosuvastatin', why:'Different statin potencies', risk:'caution'},
+  {a:'Salbutamol', b:'Levosalbutamol', why:'Different strengths and doses', risk:'caution'},
+  {a:'Diclofenac', b:'Aceclofenac', why:'Similar NSAIDs', risk:'caution'},
+  {a:'Pheniramine', b:'Chlorpheniramine / Diphenhydramine', why:'Similar antihistamines', risk:'caution'},
+  {a:'Norgestrel + EE', b:'Levonorgestrel', why:'Regular OCP vs emergency contraception', risk:'caution'},
+  {a:'Metoclopramide', b:'Loperamide', why:'Anti-emetic vs anti-diarrhoeal', risk:'caution'},
+  {a:'Fluconazole (oral)', b:'Miconazole (cream)', why:'Different routes', risk:'caution'}
+];
+
+function lasaPosterHtml(){
+  function pairCard(p){
+    return `<div class="lasa-pair ${p.risk}">
+      <div class="names"><span>${p.a}</span><span class="arrow">↔</span><span>${p.b}</span></div>
+      <div class="why">${p.why}</div>
+    </div>`;
+  }
+  const high = LASA_PAIRS.filter(p=>p.risk==='high').map(pairCard).join('');
+  const caution = LASA_PAIRS.filter(p=>p.risk==='caution').map(pairCard).join('');
+  return `<div style="max-width:900px;">
+    <div class="lasa-section high">HIGH RISK — Different drug classes (dangerous if swapped)</div>
+    ${high}
+    <div class="lasa-section caution">CAUTION — Same class, different drug or strength</div>
+    ${caution}
+    <p style="font-size:.85rem;color:#5a6d67;font-style:italic;">Store these drugs separately on the shelf. Read the label TWICE. When in doubt, check the item code.</p>
+  </div>`;
+}
+
+function getCatItems(cat){
+  if(cat !== 'LASA-Drugs') return DRUGS_BY_CAT[cat] || [];
+  const seen = new Set();
+  const out = [];
+  Object.keys(DRUGS_BY_CAT).forEach(c=>{
+    if(c === 'Surgical-Consumables') return;
+    (DRUGS_BY_CAT[c]||[]).forEach(it=>{
+      if(isLasa(it.id) && !seen.has(it.id)){
+        seen.add(it.id);
+        out.push(it);
+      }
+    });
+  });
+  out.sort((a,b)=>a.name.localeCompare(b.name));
+  return out;
+}
 
 /* ---------------- load availability from Firebase (realtime) ---------------- */
 availRef.on('value', snap => {
@@ -303,7 +398,11 @@ function lowThreshold(cat){
 }
 
 function catDuration(c){
-  const n = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length;
+  if(c === 'LASA-Drugs'){
+    // poster-style pairs need reading time: ~4s per pair
+    return Math.min(180000, 15000 + LASA_PAIRS.length * 4000);
+  }
+  const n = getCatItems(c).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
   // at an easily readable pace
   return Math.min(240000, Math.max(18000, 12000 + n*1000));
@@ -313,7 +412,7 @@ function renderDisplay(){
   const catsEl = document.getElementById('dvCats');
   const bodyEl = document.getElementById('dvBody');
 
-  const catsWithData = CAT_ORDER.filter(c => (DRUGS_BY_CAT[c]||[]).length);
+  const catsWithData = CAT_ORDER.filter(c => getCatItems(c).length);
   if(!dvActiveCat || !catsWithData.includes(dvActiveCat)) dvActiveCat = catsWithData[0];
 
   catsEl.innerHTML = catsWithData.map(c=>{
@@ -325,28 +424,34 @@ function renderDisplay(){
   });
 
   bodyEl.innerHTML = catsWithData.map(c=>{
-    const items = (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id));
     const lbl = CAT_LABELS[c];
-    const threshold = lowThreshold(c);
-    const grid = items.length
-      ? items.map(it=>{
-          const q = getQty(it.id);
-          const low = (typeof q === 'number' && q > 0 && q <= threshold);
-          const qtyHtml = (typeof q === 'number')
-            ? `<span class="qty">${q} in stock</span>`
-            : '';
-          const lasaHtml = LASA_IDS.has(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : '';
-          return `<div class="dv-item ${low?'low':''}">${it.name}${lasaHtml}${qtyHtml}</div>`;
-        }).join('')
-      : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
+    let grid;
+    if(c === 'LASA-Drugs'){
+      grid = lasaPosterHtml();
+    } else {
+      const items = getCatItems(c).filter(it=>isAvailable(it.id));
+      const threshold = lowThreshold(c);
+      grid = items.length
+        ? items.map(it=>{
+            const q = getQty(it.id);
+            const low = (typeof q === 'number' && q > 0 && q <= threshold);
+            const qtyHtml = (typeof q === 'number')
+              ? `<span class="qty">${q} in stock</span>`
+              : '';
+            const lasaHtml = isLasa(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : '';
+            return `<div class="dv-item ${low?'low':''}">${it.name}${lasaHtml}${qtyHtml}</div>`;
+          }).join('')
+        : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
+    }
+    const gridStyle = (c === 'LASA-Drugs') ? ' style="display:block;"' : '';
     return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
         <div class="dv-heading">${lbl.en} <span class="te">${lbl.te}</span></div>
-        <div class="dv-grid">${grid}</div>
+        <div class="dv-grid"${gridStyle}>${grid}</div>
       </div>`;
   }).join('');
 
-  const totalAvail = catsWithData.reduce((n,c)=>n + (DRUGS_BY_CAT[c]||[]).filter(it=>isAvailable(it.id)).length, 0);
-  const totalAll = catsWithData.reduce((n,c)=>n + (DRUGS_BY_CAT[c]||[]).length, 0);
+  const totalAvail = catsWithData.reduce((n,c)=>n + getCatItems(c).filter(it=>isAvailable(it.id)).length, 0);
+  const totalAll = catsWithData.reduce((n,c)=>n + getCatItems(c).length, 0);
   document.getElementById('dvCount').textContent = `${totalAvail} of ${totalAll} drugs available`;
 
   scheduleActivePanel();
@@ -384,7 +489,7 @@ function scheduleActivePanel(){
   dvAnimRAF = requestAnimationFrame(tick);
 
   dvTimer = setTimeout(()=>{
-    const catsWithData = CAT_ORDER.filter(c => (DRUGS_BY_CAT[c]||[]).length);
+    const catsWithData = CAT_ORDER.filter(c => getCatItems(c).length);
     let idx = catsWithData.indexOf(dvActiveCat);
     idx = (idx+1) % catsWithData.length;
     dvActiveCat = catsWithData[idx];
@@ -412,7 +517,7 @@ function renderAdmin(){
   let html = '';
 
   CAT_ORDER.forEach(c=>{
-    const items = (DRUGS_BY_CAT[c]||[]).filter(it=>{
+    const items = getCatItems(c).filter(it=>{
       if(!q) return true;
       return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
     });
@@ -428,7 +533,9 @@ function renderAdmin(){
       html += `<div class="rowitem">
           <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
             placeholder="qty" value="${qVal}" oninput="setQty(this)">
-          <span class="nm">${it.name}${LASA_IDS.has(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : ''}<span class="code">#${it.code}</span></span>
+          <span class="nm">${it.name}${isLasa(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : ''}<span class="code">#${it.code}</span></span>
+          <button onclick="toggleLasa('${it.id}')" title="Mark / unmark as Look-Alike Sound-Alike"
+            style="flex:0 0 auto;font-size:.68rem;padding:3px 8px;border-radius:5px;border:1px solid var(--line);cursor:pointer;background:${isLasa(it.id) ? 'var(--amber)' : '#fff'};color:${isLasa(it.id) ? '#fff' : '#7c8d87'};">LASA</button>
         </div>`;
     });
     html += `</div>`;
@@ -595,7 +702,8 @@ function printStockList(){
   let bodyHtml = '';
   let totalAvail = 0;
   CAT_ORDER.forEach(cat=>{
-    const items = (DRUGS_BY_CAT[cat]||[]).filter(it=>isAvailable(it.id));
+    if(cat === 'LASA-Drugs') return; // avoid duplicating drugs already printed in their real category
+    const items = getCatItems(cat).filter(it=>isAvailable(it.id));
     if(!items.length) return;
     const lbl = CAT_LABELS[cat];
     totalAvail += items.length;
