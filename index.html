@@ -91,6 +91,14 @@
   .lasa-pair.high{border-left:6px solid var(--red);}
   .lasa-pair.caution{border-left:6px solid var(--amber);}
   .lasa-section.lookalike{color:#1A5276; border-color:#1A5276;}
+  .ref-card{background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-bottom:10px; border-left:6px solid #6b46c1;}
+  .ref-card .ref-name{font-weight:800; font-size:1rem; color:var(--green-deep); margin-bottom:2px;}
+  .ref-card .ref-cat{font-size:.72rem; color:#6b46c1; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;}
+  .ref-card .ref-row{font-size:.85rem; margin-top:4px; line-height:1.35;}
+  .ref-card .ref-row b{color:#333;}
+  .ref-card .ref-contra{color:var(--red);}
+  .ref-card .ref-serious{color:var(--amber);}
   .lasa-pair.lookalike{border-left:6px solid #2E86C1;}
   .lasa-pair .names{display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:1.08rem; font-weight:700;}
   .lasa-pair .arrow{color:var(--red); font-size:1.2rem; font-weight:800;}
@@ -185,6 +193,7 @@
         <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none">
         <button onclick="printStockList()" style="background:var(--green-deep);color:#fff;border-color:var(--green-deep);">🖨️ Print available stock</button>
         <button onclick="openLasaPairModal()" style="background:var(--amber);color:#fff;border-color:var(--amber);">⚠ Edit LASA pairs</button>
+        <button onclick="openDrugRefModal()" style="background:#6b46c1;color:#fff;border-color:#6b46c1;">💊 Drug Reference</button>
       </div>
     </div>
     <div id="catContainer"></div>
@@ -230,6 +239,21 @@
       <b style="font-size:.85rem;">Pairs added by staff (all PHCs)</b>
       <div id="customPairList" style="margin-top:8px;"></div>
     </div>
+  </div>
+</div>
+
+<!-- Drug Reference search modal -->
+<div id="drugRefModal" style="display:none; position:fixed; inset:0; background:rgba(11,46,39,.55); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; max-width:640px; width:92%; max-height:85vh; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <b>💊 Drug Reference — Adverse Reactions &amp; Contraindications</b>
+      <button onclick="closeDrugRefModal()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:14px 20px 0;">
+      <input type="text" id="drugRefSearch" placeholder="Search drug name or category..."
+        style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:.95rem; box-sizing:border-box;">
+    </div>
+    <div id="drugRefResults" style="padding:14px 20px; overflow:auto; flex:1; font-size:.9rem;"></div>
   </div>
 </div>
 
@@ -295,9 +319,13 @@ const CAT_LABELS = {
   'AML-Others':{en:'AML · Others', te:'ఇతరాలు'},
   'Surgical-Consumables':{en:'Surgical & Consumables', te:'శస్త్రచికిత్స సామాగ్రి'},
   'NCD-Drugs':{en:'NCD Drugs (BP/Diabetes)', te:'ఎన్‌సీడీ మందులు'},
-  'LASA-Drugs':{en:'⚠ LASA Drugs', te:'ఒకేలా కనిపించే మందులు'}
+  'LASA-Drugs':{en:'⚠ LASA Drugs', te:'ఒకేలా కనిపించే మందులు'},
+  'Drug-Reference':{en:'💊 Drug Reference', te:'ఔషధ సమాచారం'}
 };
 const CAT_ORDER = Object.keys(CAT_LABELS);
+
+/* ---------------- Drug Reference (adverse reactions / contraindications) ---------------- */
+const DRUG_REFERENCE = [{"id": "REF_1", "cat": "Analgesics & Antipyretics", "name": "Paracetamol", "common": "Nausea, rash", "serious": "Hepatotoxicity (overdose), acute liver failure", "contra": "Severe liver disease", "monitor": "LFTs in overdose"}, {"id": "REF_2", "cat": "Analgesics & Antipyretics", "name": "Ibuprofen", "common": "GI upset, nausea, dyspepsia", "serious": "GI bleeding, peptic ulcer, renal impairment, hypertension, MI risk", "contra": "Active peptic ulcer, severe renal/hepatic disease, pregnancy (3rd trimester)", "monitor": "Renal function, BP"}, {"id": "REF_3", "cat": "Analgesics & Antipyretics", "name": "Aspirin", "common": "GI upset, dyspepsia", "serious": "GI bleeding, tinnitus, Reye's syndrome (children), bronchospasm", "contra": "Active bleeding, children <12 years, hemophilia", "monitor": "Bleeding time"}, {"id": "REF_4", "cat": "Analgesics & Antipyretics", "name": "Diclofenac", "common": "Nausea, headache, dizziness", "serious": "GI bleeding, hepatotoxicity, cardiovascular events, renal failure", "contra": "Active peptic ulcer, severe heart failure", "monitor": "LFTs, renal function"}, {"id": "REF_5", "cat": "Antibiotics - Penicillins", "name": "Amoxicillin", "common": "Diarrhea, nausea, rash", "serious": "Anaphylaxis, Stevens-Johnson syndrome, C. difficile colitis", "contra": "Penicillin allergy, infectious mononucleosis", "monitor": "Allergic reactions"}, {"id": "REF_6", "cat": "Antibiotics - Penicillins", "name": "Amoxicillin-Clavulanate", "common": "Diarrhea, nausea, vomiting", "serious": "Hepatotoxicity, cholestatic jaundice, anaphylaxis", "contra": "Penicillin allergy, history of cholestatic jaundice", "monitor": "LFTs"}, {"id": "REF_7", "cat": "Antibiotics - Cephalosporins", "name": "Cephalexin", "common": "Diarrhea, nausea, abdominal pain", "serious": "Anaphylaxis, C. difficile infection, hemolytic anemia", "contra": "Severe penicillin allergy", "monitor": "Allergic reactions"}, {"id": "REF_8", "cat": "Antibiotics - Cephalosporins", "name": "Ceftriaxone", "common": "Injection site pain, diarrhea", "serious": "Anaphylaxis, biliary sludge, hemolytic anemia", "contra": "Hyperbilirubinemic neonates", "monitor": "LFTs, CBC"}, {"id": "REF_9", "cat": "Antibiotics - Fluoroquinolones", "name": "Ciprofloxacin", "common": "Nausea, diarrhea, headache", "serious": "Tendon rupture, QT prolongation, peripheral neuropathy, aortic dissection", "contra": "Myasthenia gravis, age <18 years, pregnancy", "monitor": "ECG if cardiac risk"}, {"id": "REF_10", "cat": "Antibiotics - Macrolides", "name": "Azithromycin", "common": "Nausea, diarrhea, abdominal pain", "serious": "QT prolongation, hepatotoxicity, hearing loss", "contra": "Severe liver disease", "monitor": "ECG if cardiac disease"}, {"id": "REF_11", "cat": "Antibiotics - Macrolides", "name": "Erythromycin", "common": "Nausea, vomiting, abdominal cramping", "serious": "QT prolongation, cholestatic hepatitis, ototoxicity", "contra": "Concurrent use with ergotamine", "monitor": "LFTs"}, {"id": "REF_12", "cat": "Antibiotics - Nitroimidazoles", "name": "Metronidazole", "common": "Metallic taste, nausea, headache", "serious": "Peripheral neuropathy, seizures, disulfiram reaction with alcohol", "contra": "First trimester pregnancy, alcohol use", "monitor": "Avoid alcohol"}, {"id": "REF_13", "cat": "Antibiotics - Tetracyclines", "name": "Doxycycline", "common": "Nausea, photosensitivity, esophagitis", "serious": "Intracranial hypertension, hepatotoxicity, tooth discoloration (children)", "contra": "Pregnancy, children <8 years", "monitor": "Avoid sun exposure"}, {"id": "REF_14", "cat": "Antibiotics - Aminoglycosides", "name": "Gentamicin", "common": "Injection site pain, nausea", "serious": "Nephrotoxicity, ototoxicity (irreversible)", "contra": "Myasthenia gravis", "monitor": "Renal function, hearing tests"}, {"id": "REF_15", "cat": "Antihypertensives - ACE Inhibitors", "name": "Enalapril", "common": "Dry cough (10-20%), dizziness", "serious": "Angioedema, hyperkalemia, renal failure, teratogenicity", "contra": "Pregnancy, bilateral renal artery stenosis, angioedema history", "monitor": "K+, creatinine, BP"}, {"id": "REF_16", "cat": "Antihypertensives - ARBs", "name": "Losartan", "common": "Dizziness, fatigue", "serious": "Hyperkalemia, renal impairment, angioedema (rare)", "contra": "Pregnancy, bilateral renal artery stenosis", "monitor": "K+, creatinine"}, {"id": "REF_17", "cat": "Antihypertensives - ARBs", "name": "Telmisartan", "common": "Upper respiratory infection, dizziness", "serious": "Hyperkalemia, hypotension, renal dysfunction", "contra": "Pregnancy, severe hepatic impairment", "monitor": "K+, BP"}, {"id": "REF_18", "cat": "Antihypertensives - CCBs", "name": "Amlodipine", "common": "Peripheral edema, flushing, headache", "serious": "Severe hypotension, gingival hyperplasia", "contra": "Severe aortic stenosis, cardiogenic shock", "monitor": "BP, ankle edema"}, {"id": "REF_19", "cat": "Antihypertensives - CCBs", "name": "Nifedipine", "common": "Headache, flushing, edema", "serious": "Hypotension, tachycardia, myocardial ischemia", "contra": "Cardiogenic shock, unstable angina", "monitor": "Heart rate, BP"}, {"id": "REF_20", "cat": "Antihypertensives - Beta Blockers", "name": "Atenolol", "common": "Fatigue, cold extremities, bradycardia", "serious": "Bronchospasm, heart block, severe hypotension, depression", "contra": "Asthma, severe bradycardia, heart block", "monitor": "Heart rate, BP"}, {"id": "REF_21", "cat": "Antihypertensives - Beta Blockers", "name": "Metoprolol", "common": "Dizziness, fatigue, bradycardia", "serious": "Heart failure exacerbation, bronchospasm, masking hypoglycemia", "contra": "Severe bradycardia, cardiogenic shock, asthma", "monitor": "Heart rate, glucose"}, {"id": "REF_22", "cat": "Antihypertensives - Diuretics", "name": "Hydrochlorothiazide", "common": "Hypokalemia, hyperuricemia, dizziness", "serious": "Severe electrolyte imbalance, photosensitivity, pancreatitis", "contra": "Anuria, severe renal failure", "monitor": "K+, Na+, glucose, uric acid"}, {"id": "REF_23", "cat": "Antihypertensives - Diuretics", "name": "Furosemide", "common": "Hypokalemia, hyponatremia, dehydration", "serious": "Ototoxicity, severe electrolyte depletion, hypotension", "contra": "Anuria, severe electrolyte depletion", "monitor": "K+, Na+, renal function"}, {"id": "REF_24", "cat": "Antidiabetics - Biguanides", "name": "Metformin", "common": "GI upset, diarrhea, nausea, metallic taste", "serious": "Lactic acidosis (rare), vitamin B12 deficiency", "contra": "Severe renal impairment (eGFR <30), metabolic acidosis", "monitor": "Renal function, B12, lactate"}, {"id": "REF_25", "cat": "Antidiabetics - Sulfonylureas", "name": "Glibenclamide", "common": "Hypoglycemia, weight gain", "serious": "Severe hypoglycemia, SIADH, hemolytic anemia", "contra": "Severe renal/hepatic disease", "monitor": "Blood glucose"}, {"id": "REF_26", "cat": "Antidiabetics - Sulfonylureas", "name": "Glimepiride", "common": "Hypoglycemia, nausea, dizziness", "serious": "Severe hypoglycemia, cholestatic jaundice", "contra": "Type 1 DM, diabetic ketoacidosis", "monitor": "Blood glucose, LFTs"}, {"id": "REF_27", "cat": "Antidiabetics - Insulin", "name": "Human Insulin (Regular)", "common": "Hypoglycemia, injection site reactions", "serious": "Severe hypoglycemia, hypokalemia, lipodystrophy", "contra": "Hypoglycemia", "monitor": "Blood glucose, K+"}, {"id": "REF_28", "cat": "PPIs", "name": "Omeprazole", "common": "Headache, diarrhea, abdominal pain", "serious": "Fracture risk, C. difficile, hypomagnesemia, vitamin B12 deficiency", "contra": "Severe hepatic impairment", "monitor": "Magnesium (long-term)"}, {"id": "REF_29", "cat": "PPIs", "name": "Pantoprazole", "common": "Headache, nausea, diarrhea", "serious": "Bone fractures, fundic gland polyps, renal interstitial nephritis", "contra": "None major", "monitor": "Long-term: Mg, B12"}, {"id": "REF_30", "cat": "H2 Blockers", "name": "Ranitidine (if available)", "common": "Headache, dizziness, constipation", "serious": "Hepatotoxicity, thrombocytopenia, confusion (elderly)", "contra": "Porphyria", "monitor": "LFTs"}, {"id": "REF_31", "cat": "Bronchodilators", "name": "Salbutamol (Albuterol)", "common": "Tremor, tachycardia, palpitations", "serious": "Hypokalemia, paradoxical bronchospasm, arrhythmias", "contra": "None absolute", "monitor": "K+, heart rate"}, {"id": "REF_32", "cat": "Corticosteroids - Systemic", "name": "Prednisolone", "common": "Weight gain, mood changes, insomnia", "serious": "Osteoporosis, hyperglycemia, immunosuppression, adrenal suppression", "contra": "Systemic fungal infections", "monitor": "Glucose, BP, bone density"}, {"id": "REF_33", "cat": "Antihistamines", "name": "Cetirizine", "common": "Drowsiness, dry mouth, headache", "serious": "Urinary retention, confusion (elderly)", "contra": "Severe renal impairment", "monitor": "None routine"}, {"id": "REF_34", "cat": "Antihistamines", "name": "Chlorpheniramine", "common": "Sedation, dry mouth, urinary retention", "serious": "Severe CNS depression, angle-closure glaucoma", "contra": "Angle-closure glaucoma, BPH", "monitor": "None routine"}, {"id": "REF_35", "cat": "Anthelmintics", "name": "Albendazole", "common": "Abdominal pain, nausea, headache", "serious": "Hepatotoxicity, bone marrow suppression, alopecia", "contra": "Pregnancy, severe liver disease", "monitor": "LFTs, CBC"}, {"id": "REF_36", "cat": "Anthelmintics", "name": "Mebendazole", "common": "Abdominal pain, diarrhea", "serious": "Hepatotoxicity (rare), neutropenia", "contra": "Pregnancy (1st trimester)", "monitor": "None routine"}, {"id": "REF_37", "cat": "Antimalarials", "name": "Chloroquine", "common": "Nausea, headache, pruritus", "serious": "Retinopathy, cardiomyopathy, seizures", "contra": "Retinopathy, psoriasis", "monitor": "Eye exam (long-term)"}, {"id": "REF_38", "cat": "Antimalarials", "name": "Artemether-Lumefantrine", "common": "Headache, dizziness, fatigue", "serious": "QT prolongation, hepatotoxicity", "contra": "Severe malaria (use parenteral)", "monitor": "ECG if cardiac risk"}, {"id": "REF_39", "cat": "Antiemetics", "name": "Metoclopramide", "common": "Drowsiness, restlessness, diarrhea", "serious": "Extrapyramidal symptoms, tardive dyskinesia, neuroleptic malignant syndrome", "contra": "GI obstruction, pheochromocytoma, Parkinson's", "monitor": "Movement disorders"}, {"id": "REF_40", "cat": "Antiemetics", "name": "Ondansetron", "common": "Headache, constipation", "serious": "QT prolongation, serotonin syndrome", "contra": "Congenital long QT syndrome", "monitor": "ECG if risk factors"}, {"id": "REF_41", "cat": "Antacids", "name": "Aluminum Hydroxide + Magnesium Hydroxide", "common": "Constipation (Al), diarrhea (Mg)", "serious": "Hypophosphatemia (chronic Al use), hypermagnesemia", "contra": "Severe renal impairment", "monitor": "Renal function"}, {"id": "REF_42", "cat": "Anti-TB", "name": "Isoniazid", "common": "Nausea, peripheral neuropathy", "serious": "Hepatotoxicity, seizures, lupus-like syndrome", "contra": "Active hepatitis, severe liver disease", "monitor": "LFTs monthly"}, {"id": "REF_43", "cat": "Anti-TB", "name": "Rifampicin", "common": "Orange discoloration of urine/tears, nausea", "serious": "Hepatotoxicity, thrombocytopenia, flu-like syndrome", "contra": "Jaundice", "monitor": "LFTs, CBC"}, {"id": "REF_44", "cat": "Anti-TB", "name": "Pyrazinamide", "common": "Arthralgia, nausea", "serious": "Hepatotoxicity, hyperuricemia, photosensitivity", "contra": "Severe liver disease, acute gout", "monitor": "LFTs, uric acid"}, {"id": "REF_45", "cat": "Anti-TB", "name": "Ethambutol", "common": "Nausea, headache", "serious": "Optic neuritis (dose/duration dependent), peripheral neuropathy", "contra": "Optic neuritis, severe renal impairment", "monitor": "Vision/color vision monthly"}, {"id": "REF_46", "cat": "Anticonvulsants", "name": "Phenytoin", "common": "Gingival hyperplasia, hirsutism, ataxia", "serious": "SJS/TEN, bone marrow suppression, hepatotoxicity, teratogenicity", "contra": "Heart block, porphyria", "monitor": "Phenytoin levels, CBC, LFTs"}, {"id": "REF_47", "cat": "Anticonvulsants", "name": "Carbamazepine", "common": "Dizziness, drowsiness, nausea", "serious": "SJS/TEN, aplastic anemia, SIADH, hepatotoxicity", "contra": "Bone marrow depression, AV block", "monitor": "CBC, LFTs, Na+"}, {"id": "REF_48", "cat": "Anticonvulsants", "name": "Sodium Valproate", "common": "Nausea, weight gain, tremor", "serious": "Hepatotoxicity, pancreatitis, thrombocytopenia, teratogenicity", "contra": "Liver disease, urea cycle disorders", "monitor": "LFTs, CBC, ammonia"}, {"id": "REF_49", "cat": "Oral Contraceptives", "name": "Combined OCP (Ethinyl Estradiol + Levonorgestrel)", "common": "Nausea, breast tenderness, breakthrough bleeding", "serious": "VTE/DVT, stroke, MI, hypertension, hepatic adenoma", "contra": "VTE history, smoking >35yrs, migraine with aura, severe hypertension", "monitor": "BP, BMI"}, {"id": "REF_50", "cat": "Oral Contraceptives", "name": "Progesterone-only Pill (POP)", "common": "Irregular bleeding, headache", "serious": "Ectopic pregnancy (if failure), ovarian cysts", "contra": "Breast cancer, severe liver disease", "monitor": "None routine"}, {"id": "REF_51", "cat": "Antifungals", "name": "Fluconazole", "common": "Nausea, headache, abdominal pain", "serious": "Hepatotoxicity, QT prolongation, SJS/TEN", "contra": "Concurrent terfenadine use", "monitor": "LFTs"}, {"id": "REF_52", "cat": "Antifungals", "name": "Clotrimazole (Topical)", "common": "Local irritation, burning", "serious": "Hypersensitivity reactions (rare)", "contra": "Hypersensitivity", "monitor": "None"}, {"id": "REF_53", "cat": "Antivirals", "name": "Acyclovir", "common": "Nausea, headache, diarrhea", "serious": "Nephrotoxicity, neurotoxicity (high dose), crystalluria", "contra": "Dehydration", "monitor": "Renal function, hydration"}, {"id": "REF_54", "cat": "Iron Supplements", "name": "Ferrous Sulfate", "common": "Nausea, constipation, dark stools, abdominal pain", "serious": "Iron overload, acute toxicity in children", "contra": "Hemochromatosis, hemolytic anemia", "monitor": "Hemoglobin, ferritin"}, {"id": "REF_55", "cat": "Vitamins", "name": "Folic Acid", "common": "Rare: GI upset", "serious": "Masking B12 deficiency (neurological damage)", "contra": "None", "monitor": "B12 (if suspected deficiency)"}, {"id": "REF_56", "cat": "Vitamins", "name": "Vitamin B12 (Cyanocobalamin)", "common": "Rare: acne, diarrhea", "serious": "Hypokalemia (initial treatment)", "contra": "Leber's optic atrophy", "monitor": "K+ initially"}, {"id": "REF_57", "cat": "Antiprotozoals", "name": "Cotrimoxazole", "common": "Nausea, rash, hyperkalemia", "serious": "SJS/TEN, bone marrow suppression, hyperkalemia, crystalluria", "contra": "G6PD deficiency, severe renal/hepatic disease, porphyria", "monitor": "CBC, K+, creatinine"}, {"id": "REF_58", "cat": "Antiplatelets", "name": "Clopidogrel", "common": "Bleeding, bruising, dyspepsia", "serious": "Major hemorrhage, TTP, neutropenia", "contra": "Active bleeding, severe hepatic impairment", "monitor": "CBC if prolonged use"}, {"id": "REF_59", "cat": "Anxiolytics", "name": "Diazepam", "common": "Drowsiness, confusion, ataxia", "serious": "Respiratory depression, dependence, paradoxical agitation", "contra": "Severe respiratory disease, myasthenia gravis", "monitor": "Respiratory function"}, {"id": "REF_60", "cat": "Laxatives", "name": "Bisacodyl", "common": "Abdominal cramping, diarrhea", "serious": "Electrolyte imbalance (chronic use), dependence", "contra": "Intestinal obstruction, acute abdomen", "monitor": "Electrolytes if chronic"}, {"id": "REF_61", "cat": "Antidiarrheals", "name": "Loperamide", "common": "Constipation, abdominal pain, drowsiness", "serious": "Toxic megacolon, paralytic ileus, CNS depression (overdose)", "contra": "Acute dysentery, C. difficile, ulcerative colitis", "monitor": "None routine"}];
 
 /* Look-Alike Sound-Alike (LASA) drugs — flagged with a small badge so staff
    double-check the name before dispensing. The list below is the starting
@@ -362,6 +390,27 @@ lasaPairsRef.on('value', snap=>{
 function allLasaPairs(){
   return LASA_PAIRS.concat(Object.values(customPairs));
 }
+
+function openDrugRefModal(){
+  document.getElementById('drugRefModal').style.display = 'flex';
+  document.getElementById('drugRefSearch').value = '';
+  renderDrugRefResults();
+  document.getElementById('drugRefSearch').focus();
+}
+function closeDrugRefModal(){
+  document.getElementById('drugRefModal').style.display = 'none';
+}
+function renderDrugRefResults(){
+  const q = (document.getElementById('drugRefSearch').value||'').toLowerCase().trim();
+  const container = document.getElementById('drugRefResults');
+  const matches = DRUG_REFERENCE.filter(it=>
+    !q || it.name.toLowerCase().includes(q) || it.cat.toLowerCase().includes(q)
+  );
+  container.innerHTML = matches.length
+    ? matches.map(drugRefCardHtml).join('')
+    : `<p style="color:#8a9a94;text-align:center;margin-top:20px;">No drugs match your search.</p>`;
+}
+document.getElementById('drugRefSearch').addEventListener('input', renderDrugRefResults);
 
 function openLasaPairModal(){
   document.getElementById('lasaPairModal').style.display = 'flex';
@@ -428,6 +477,7 @@ function lasaPosterHtml(){
 }
 
 function getCatItems(cat){
+  if(cat === 'Drug-Reference') return DRUG_REFERENCE;
   if(cat !== 'LASA-Drugs') return DRUGS_BY_CAT[cat] || [];
   const seen = new Set();
   const out = [];
@@ -442,6 +492,23 @@ function getCatItems(cat){
   });
   out.sort((a,b)=>a.name.localeCompare(b.name));
   return out;
+}
+
+function drugRefCardHtml(it){
+  return `<div class="ref-card">
+    <div class="ref-name">${it.name}</div>
+    <div class="ref-cat">${it.cat}</div>
+    <div class="ref-row"><b>Common:</b> ${it.common}</div>
+    <div class="ref-row ref-serious"><b>Serious/Rare:</b> ${it.serious}</div>
+    <div class="ref-row ref-contra"><b>Contraindications:</b> ${it.contra}</div>
+    <div class="ref-row"><b>Monitoring:</b> ${it.monitor}</div>
+  </div>`;
+}
+function drugReferencePosterHtml(){
+  return `<div style="max-width:900px;">
+    ${DRUG_REFERENCE.map(drugRefCardHtml).join('')}
+    <p style="font-size:.85rem;color:#5a6d67;font-style:italic;">General reference only — always confirm against the patient's full history and current guidelines before dispensing.</p>
+  </div>`;
 }
 
 /* ---------------- load availability from Firebase (realtime) ---------------- */
@@ -491,6 +558,10 @@ function catDuration(c){
     // poster-style pairs need reading time: ~4s per pair
     return Math.min(180000, 15000 + allLasaPairs().length * 4000);
   }
+  if(c === 'Drug-Reference'){
+    // longer cards, ~5s reading time per drug, capped
+    return Math.min(240000, 20000 + DRUG_REFERENCE.length * 5000);
+  }
   const n = getCatItems(c).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
   // at an easily readable pace
@@ -517,6 +588,8 @@ function renderDisplay(){
     let grid;
     if(c === 'LASA-Drugs'){
       grid = lasaPosterHtml();
+    } else if(c === 'Drug-Reference'){
+      grid = drugReferencePosterHtml();
     } else {
       const items = getCatItems(c).filter(it=>isAvailable(it.id));
       const threshold = lowThreshold(c);
@@ -531,15 +604,15 @@ function renderDisplay(){
           }).join('')
         : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
     }
-    const gridStyle = (c === 'LASA-Drugs') ? ' style="display:block;"' : '';
+    const gridStyle = (c === 'LASA-Drugs' || c === 'Drug-Reference') ? ' style="display:block;"' : '';
     return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
         <div class="dv-heading">${lbl.en} <span class="te">${lbl.te}</span></div>
         <div class="dv-grid"${gridStyle}>${grid}</div>
       </div>`;
   }).join('');
 
-  const totalAvail = catsWithData.reduce((n,c)=>n + getCatItems(c).filter(it=>isAvailable(it.id)).length, 0);
-  const totalAll = catsWithData.reduce((n,c)=>n + getCatItems(c).length, 0);
+  const totalAvail = catsWithData.filter(c=>c!=='Drug-Reference').reduce((n,c)=>n + getCatItems(c).filter(it=>isAvailable(it.id)).length, 0);
+  const totalAll = catsWithData.filter(c=>c!=='Drug-Reference').reduce((n,c)=>n + getCatItems(c).length, 0);
   document.getElementById('dvCount').textContent = `${totalAvail} of ${totalAll} drugs available`;
 
   scheduleActivePanel();
@@ -788,7 +861,7 @@ function printStockList(){
   let bodyHtml = '';
   let totalAvail = 0;
   CAT_ORDER.forEach(cat=>{
-    if(cat === 'LASA-Drugs') return; // avoid duplicating drugs already printed in their real category
+    if(cat === 'LASA-Drugs' || cat === 'Drug-Reference') return; // avoid duplicating drugs already printed / not real stock
     const items = getCatItems(cat).filter(it=>isAvailable(it.id));
     if(!items.length) return;
     const lbl = CAT_LABELS[cat];
