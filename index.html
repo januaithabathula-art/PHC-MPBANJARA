@@ -527,8 +527,7 @@ function renderDisplay(){
             const qtyHtml = (typeof q === 'number')
               ? `<span class="qty">${q} in stock</span>`
               : '';
-            const lasaHtml = isLasa(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : '';
-            return `<div class="dv-item ${low?'low':''}">${it.name}${lasaHtml}${qtyHtml}</div>`;
+            return `<div class="dv-item ${low?'low':''}">${it.name}${qtyHtml}</div>`;
           }).join('')
         : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
     }
@@ -622,9 +621,7 @@ function renderAdmin(){
       html += `<div class="rowitem">
           <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
             placeholder="qty" value="${qVal}" oninput="setQty(this)">
-          <span class="nm">${it.name}${isLasa(it.id) ? '<span class="lasa-badge">⚠ LASA</span>' : ''}<span class="code">#${it.code}</span></span>
-          <button onclick="toggleLasa('${it.id}')" title="Mark / unmark as Look-Alike Sound-Alike"
-            style="flex:0 0 auto;font-size:.68rem;padding:3px 8px;border-radius:5px;border:1px solid var(--line);cursor:pointer;background:${isLasa(it.id) ? 'var(--amber)' : '#fff'};color:${isLasa(it.id) ? '#fff' : '#7c8d87'};">LASA</button>
+          <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
         </div>`;
     });
     html += `</div>`;
