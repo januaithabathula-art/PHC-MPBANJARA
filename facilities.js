@@ -8,7 +8,6 @@
 // immediately.
 const FACILITIES = {
   "mpbanjara":   "PHC MP Banjara",
-  "sulanagar":   "PHC Sulanagar",
   "manuguru":    "PHC Manuguru",
   "aswapuram":   "PHC Aswapuram",
   "narasapuram": "PHC Narasapuram",
@@ -28,7 +27,6 @@ const FACILITIES = {
 // If a PHC is missing here, it falls back to the DEFAULT_PIN below.
 const FACILITY_PINS = {
   "mpbanjara":   "1947",
-  "sulanagar":   "2201",
   "manuguru":    "3315",
   "aswapuram":   "2025",
   "narasapuram": "4101",
