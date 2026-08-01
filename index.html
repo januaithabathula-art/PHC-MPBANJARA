@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PHC MP Banjara</title>
-<link rel="manifest" href="manifest.json">
+<!-- No shared manifest here on purpose: a manifest's fixed start_url would
+     force every pinned shortcut to open the same PHC. Without it, "Add to
+     Home screen" keeps the exact link (?f=yourphc) and that PHC's own name. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0B5D4C">
 <style>
   :root{
