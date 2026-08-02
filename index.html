@@ -148,6 +148,12 @@
   @media (max-width: 640px){
     .brand .en{font-size:1rem;} .brand .te{font-size:.8rem;}
     .dv-heading{font-size:1.2rem;} .dv-item{font-size:.92rem;}
+    .dv-cats{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      padding:10px 14px 8px; gap:8px; scrollbar-width:none;}
+    .dv-cats::-webkit-scrollbar{display:none;}
+    .dv-cat{flex:0 0 auto; padding:6px 12px; font-size:.78rem; white-space:nowrap;}
+    .dv-body{padding:14px 16px 6px;}
+    .dv-grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
