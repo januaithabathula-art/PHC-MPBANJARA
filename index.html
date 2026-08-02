@@ -280,6 +280,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="facilities.js"></script>
 <script src="drugs_data.js"></script>
@@ -300,6 +301,12 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+/* Anonymous sign-in so the database rules can require auth for writes,
+   while every device (TV board + staff) still gets full read access.
+   This runs silently in the background — no login screen, nothing changes
+   for staff day-to-day. See Firebase Console > Realtime Database > Rules. */
+firebase.auth().signInAnonymously().catch(err => console.error('Auth failed:', err));
 
 /* ---------------- which PHC is this link for? ---------------- */
 const urlParams = new URLSearchParams(location.search);
