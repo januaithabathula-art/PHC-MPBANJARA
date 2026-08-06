@@ -95,6 +95,14 @@
   .stock-num{font-family:var(--font-mono);font-weight:600;color:var(--ink);}
 
   .li-item{display:flex;align-items:center;gap:8px;background:var(--primary-soft);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;font-size:13.5px;}
+  .search-results{position:absolute;top:100%;left:0;right:0;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-sm);box-shadow:var(--shadow);max-height:230px;overflow-y:auto;z-index:30;display:none;margin-top:2px;}
+  .search-results.show{display:block;}
+  .search-results .sr-item{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--line);}
+  .search-results .sr-item:last-child{border-bottom:none;}
+  .search-results .sr-item:active{background:var(--primary-soft);}
+  .search-results .sr-name{font-weight:600;}
+  .search-results .sr-stock{color:var(--ink-soft);font-family:var(--font-mono);font-size:11.5px;}
+  .search-results .sr-empty{padding:12px;color:var(--ink-soft);font-size:13px;}
   .li-item .nm{flex:1;}
   .li-item .qv{font-family:var(--font-mono);font-weight:600;}
   .li-item button{background:none;border:none;color:var(--danger);font-size:15px;padding:2px 4px;}
@@ -177,9 +185,11 @@
           <select id="issueInstitution"></select>
         </div>
         <div class="field-row">
-          <div class="field" style="flex:2;">
+          <div class="field" style="flex:2;position:relative;">
             <label>Medicine</label>
-            <select id="issueMedicine"></select>
+            <input type="text" id="issueMedicineSearch" placeholder="Search medicine…" autocomplete="off">
+            <input type="hidden" id="issueMedicine" value="">
+            <div class="search-results" id="issueMedicineResults"></div>
           </div>
           <div class="field" style="flex:1;">
             <label>Qty</label>
@@ -471,14 +481,52 @@ function fmtNum(n){
 }
 
 function renderIssueMedicineOptions(){
-  const sel = $('issueMedicine');
-  const cur = sel.value;
-  sel.innerHTML = medicines.length
-    ? medicines.map(m => `<option value="${m.id}">${esc(m.name)} (Avail: ${fmtNum(m.stock)} ${esc(m.unit||'')})</option>`).join('')
-    : `<option value="">Add a medicine first</option>`;
-  if(cur) sel.value = cur;
   updateIssueAvailDisplay();
 }
+
+function issueMedicineSearchResults(qtext){
+  const q = qtext.trim().toLowerCase();
+  if(!q) return [];
+  return medicines.filter(m => m.name.toLowerCase().includes(q)).slice(0, 8);
+}
+
+function renderIssueMedicineResults(){
+  const box = $('issueMedicineResults');
+  const q = $('issueMedicineSearch').value;
+  const results = issueMedicineSearchResults(q);
+  if(!q.trim()){ box.classList.remove('show'); box.innerHTML=''; return; }
+  box.innerHTML = results.length
+    ? results.map(m => `
+        <div class="sr-item" data-id="${m.id}">
+          <div class="sr-name">${esc(m.name)}</div>
+          <div class="sr-stock">Avail: ${fmtNum(m.stock)} ${esc(m.unit||'')}</div>
+        </div>`).join('')
+    : `<div class="sr-empty">No matching medicine — check Stock tab or add it there</div>`;
+  box.classList.add('show');
+}
+
+function selectIssueMedicine(med){
+  $('issueMedicine').value = med.id;
+  $('issueMedicineSearch').value = med.name;
+  $('issueMedicineResults').classList.remove('show');
+  updateIssueAvailDisplay();
+}
+
+$('issueMedicineSearch').addEventListener('input', () => {
+  $('issueMedicine').value = ''; // clear selection until they pick a result
+  renderIssueMedicineResults();
+  updateIssueAvailDisplay();
+});
+$('issueMedicineSearch').addEventListener('focus', renderIssueMedicineResults);
+$('issueMedicineResults').addEventListener('mousedown', (e) => {
+  const item = e.target.closest('.sr-item');
+  if(!item) return;
+  const med = medicines.find(m => m.id === item.dataset.id);
+  if(med) selectIssueMedicine(med);
+});
+$('issueMedicineSearch').addEventListener('blur', () => {
+  setTimeout(() => $('issueMedicineResults').classList.remove('show'), 150);
+});
 
 function updateIssueAvailDisplay(){
   const medId = $('issueMedicine').value;
@@ -497,7 +545,6 @@ function updateIssueAvailDisplay(){
     el.style.color = availNow <= 0 ? 'var(--danger)' : '';
   }
 }
-$('issueMedicine').addEventListener('change', updateIssueAvailDisplay);
 $('issueQty').addEventListener('input', updateIssueAvailDisplay);
 
 // Medicine sheet
@@ -577,12 +624,14 @@ $('btnAddLine').addEventListener('click', () => {
   const medId = $('issueMedicine').value;
   const qty = parseFloat($('issueQty').value);
   const med = medicines.find(m => m.id === medId);
-  if(!med) return toast('Add a medicine first', true);
+  if(!med) return toast('Search and pick a medicine first', true);
   if(isNaN(qty) || qty <= 0) return toast('Enter a valid quantity', true);
   const already = issueLines.filter(l => l.medicineId===medId).reduce((s,l)=>s+l.qty,0);
   if(already + qty > (med.stock||0)) return toast(`Only ${fmtNum(med.stock - already)} ${med.unit||''} of ${med.name} available`, true);
   issueLines.push({ medicineId: medId, name: med.name, unit: med.unit||'', batch: med.batch||'', expiry: med.expiry||'', qty });
   $('issueQty').value = '';
+  $('issueMedicineSearch').value = '';
+  $('issueMedicine').value = '';
   renderIssueLines();
 });
 
