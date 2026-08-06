@@ -348,6 +348,25 @@ let receiveLines = []; // {name, unit, batch, expiry, qty}
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+function normName(s){ return String(s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function tightName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function findSimilarMedicine(name, excludeId){
+  const n = normName(name), tn = tightName(name);
+  if(!n) return null;
+  let best = null;
+  for(const m of medicines){
+    if(m.id === excludeId) continue;
+    const mn = normName(m.name), tmn = tightName(m.name);
+    if(mn === n) return { med: m, exact: true };
+    if(!best && tn.length >= 4 && tmn === tn){
+      best = { med: m, exact: false };
+    }else if(!best && Math.min(mn.length, n.length) >= 4 && (mn.includes(n) || n.includes(mn))){
+      best = { med: m, exact: false };
+    }
+  }
+  return best;
+}
+
 function toast(msg, isErr){
   const t = $('toast');
   t.textContent = msg;
@@ -503,6 +522,19 @@ $('btnSaveMed').addEventListener('click', async () => {
   const stock = parseFloat($('medStock').value);
   if(!name) return toast('Enter a medicine name', true);
   if(isNaN(stock) || stock < 0) return toast('Enter a valid stock quantity', true);
+  const id = $('medId').value;
+
+  if(!id){
+    const match = findSimilarMedicine(name);
+    if(match){
+      const editExisting = confirm(`"${match.med.name}" already exists (${fmtNum(match.med.stock)} ${match.med.unit||''} in stock).\n\nOK = edit that existing medicine instead.\nCancel = save "${name}" as a separate, different medicine.`);
+      if(editExisting){
+        openMedSheet(match.med);
+        return;
+      }
+    }
+  }
+
   const data = {
     name,
     unit: $('medUnit').value.trim(),
@@ -512,7 +544,6 @@ $('btnSaveMed').addEventListener('click', async () => {
     threshold: $('medThreshold').value ? parseFloat($('medThreshold').value) : 10
   };
   try{
-    const id = $('medId').value;
     if(id){ await updateDoc(doc(db, 'medicines', id), data); }
     else{ await addDoc(collection(db, 'medicines'), {...data, createdAt: serverTimestamp()}); }
     $('medOverlay').classList.remove('show');
@@ -741,8 +772,16 @@ $('btnAddReceiveLine').addEventListener('click', () => {
   const qty = parseFloat($('receiveQty').value);
   if(!name) return toast('Enter a medicine name', true);
   if(isNaN(qty) || qty <= 0) return toast('Enter a valid quantity', true);
+
+  let finalName = name;
+  const match = findSimilarMedicine(name);
+  if(match && !match.exact){
+    const useExisting = confirm(`This looks like an existing medicine: "${match.med.name}" (currently ${fmtNum(match.med.stock)} ${match.med.unit||''}).\n\nOK = add this quantity to that same medicine.\nCancel = save "${name}" as a separate, different medicine.`);
+    if(useExisting) finalName = match.med.name;
+  }
+
   receiveLines.push({
-    name, unit: $('receiveUnit').value.trim(), batch: $('receiveBatch').value.trim(),
+    name: finalName, unit: $('receiveUnit').value.trim(), batch: $('receiveBatch').value.trim(),
     expiry: $('receiveExpiry').value, qty
   });
   $('receiveMedName').value=''; $('receiveUnit').value=''; $('receiveBatch').value='';
@@ -758,7 +797,7 @@ $('btnSaveReceive').addEventListener('click', async () => {
   btn.disabled = true;
   try{
     for(const line of receiveLines){
-      const existing = medicines.find(m => m.name.toLowerCase() === line.name.toLowerCase());
+      const existing = medicines.find(m => normName(m.name) === normName(line.name));
       if(existing){
         await updateDoc(doc(db,'medicines',existing.id), {
           stock: (existing.stock||0) + line.qty,
@@ -894,7 +933,7 @@ $('btnSavePdfImport').addEventListener('click', async () => {
   try{
     for(const r of toSave){
       const qty = r._finalQty ?? stockFor(r);
-      const existing = medicines.find(m => m.name.toLowerCase() === r.name.toLowerCase());
+      const existing = medicines.find(m => normName(m.name) === normName(r.name));
       if(existing){
         await updateDoc(doc(db,'medicines',existing.id), { stock: qty });
       }else{
