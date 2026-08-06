@@ -151,10 +151,15 @@
     <!-- STOCK VIEW -->
     <section class="view active" id="view-stock">
       <div class="card">
-        <div class="section-title">Import from E-Aushadhi</div>
+        <div class="section-title">Receive stock</div>
+        <button class="btn primary block" id="btnReceiveStock">📥 Record a receipt</button>
+        <div class="helptext">Log medicines coming in — e.g. from CMS Bhadradri Kothagudem. Adds to existing stock, or creates the medicine if it's new.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Or import from E-Aushadhi</div>
         <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
         <button class="btn block" id="btnPdfImport">⬆️ Upload E-Aushadhi PDF</button>
-        <div class="helptext">Extracts item names &amp; quantities automatically — you'll review and edit before anything is saved.</div>
+        <div class="helptext">Needs an actual PDF export (not a photo) with matching columns.</div>
       </div>
       <div class="section-title">Current stock</div>
       <div class="card" id="medList" style="padding:4px 14px;"></div>
@@ -178,6 +183,7 @@
             <input type="number" id="issueQty" min="0" step="any" placeholder="0">
           </div>
         </div>
+        <div class="stock-line" id="issueAvailLine"><span>Available now</span><span class="stock-num" id="issueAvailNum">—</span></div>
         <button class="btn block" id="btnAddLine">+ Add to issue</button>
 
         <div class="divider-label">Items to issue</div>
@@ -263,6 +269,48 @@
   </div>
 </div>
 
+<!-- Receive stock sheet -->
+<div class="overlay" id="receiveOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>Record a receipt</h2>
+      <button id="receiveSheetClose">✕</button>
+    </div>
+    <div class="field">
+      <label>Received from</label>
+      <input type="text" id="receiveSource" value="CMS Bhadradri Kothagudem">
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="receiveDate">
+    </div>
+    <div class="divider-label">Add medicines</div>
+    <div class="field-row">
+      <div class="field" style="flex:2;">
+        <label>Medicine name</label>
+        <input type="text" id="receiveMedName" list="medNameList" placeholder="Type or pick existing">
+        <datalist id="medNameList"></datalist>
+      </div>
+      <div class="field" style="flex:1;">
+        <label>Qty</label>
+        <input type="number" id="receiveQty" min="0" step="any" placeholder="0">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Unit</label><input type="text" id="receiveUnit" placeholder="Tablets"></div>
+      <div class="field"><label>Batch</label><input type="text" id="receiveBatch"></div>
+    </div>
+    <div class="field"><label>Expiry (optional)</label><input type="date" id="receiveExpiry"></div>
+    <button class="btn block" id="btnAddReceiveLine">+ Add to receipt</button>
+
+    <div class="divider-label">Items received</div>
+    <div id="receiveLines"></div>
+    <div class="empty" id="receiveLinesEmpty" style="padding:14px;"><p>No items added yet</p></div>
+
+    <button class="btn primary block" id="btnSaveReceive" style="margin-top:12px;">Save receipt</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div id="printArea"></div>
 
@@ -290,7 +338,9 @@ const db = getFirestore(app);
 let institutions = [];
 let medicines = [];
 let issues = [];
+let receipts = [];
 let issueLines = []; // {medicineId, name, unit, qty}
+let receiveLines = []; // {name, unit, batch, expiry, qty}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -365,6 +415,7 @@ onSnapshot(query(collection(db, 'medicines'), orderBy('name')), snap => {
   renderMedicines();
   renderIssueMedicineOptions();
   renderHeaderStock();
+  $('medNameList').innerHTML = medicines.map(m => `<option value="${esc(m.name)}">`).join('');
 });
 
 function renderHeaderStock(){
@@ -404,7 +455,28 @@ function renderIssueMedicineOptions(){
     ? medicines.map(m => `<option value="${m.id}">${esc(m.name)} (Avail: ${fmtNum(m.stock)} ${esc(m.unit||'')})</option>`).join('')
     : `<option value="">Add a medicine first</option>`;
   if(cur) sel.value = cur;
+  updateIssueAvailDisplay();
 }
+
+function updateIssueAvailDisplay(){
+  const medId = $('issueMedicine').value;
+  const med = medicines.find(m => m.id === medId);
+  const el = $('issueAvailNum');
+  if(!med){ el.textContent = '—'; el.style.color = ''; return; }
+  const already = issueLines.filter(l => l.medicineId===medId).reduce((s,l)=>s+l.qty,0);
+  const availNow = (med.stock||0) - already;
+  const qty = parseFloat($('issueQty').value) || 0;
+  if(qty > 0){
+    const after = availNow - qty;
+    el.textContent = `${fmtNum(availNow)} ${med.unit||''} → ${fmtNum(after)} after this`;
+    el.style.color = after < 0 ? 'var(--danger)' : '';
+  }else{
+    el.textContent = `${fmtNum(availNow)} ${med.unit||''}`;
+    el.style.color = availNow <= 0 ? 'var(--danger)' : '';
+  }
+}
+$('issueMedicine').addEventListener('change', updateIssueAvailDisplay);
+$('issueQty').addEventListener('input', updateIssueAvailDisplay);
 
 // Medicine sheet
 function openMedSheet(existing){
@@ -463,6 +535,7 @@ function renderIssueLines(){
       <span class="qv">${fmtNum(l.qty)} ${esc(l.unit||'')}</span>
       <button onclick="window.__rmLine(${idx})">✕</button>
     </div>`).join('');
+  updateIssueAvailDisplay();
 }
 window.__rmLine = (idx) => { issueLines.splice(idx,1); renderIssueLines(); };
 
@@ -491,7 +564,7 @@ $('btnSubmitIssue').addEventListener('click', async () => {
     const result = await createIssue(inst, issueLines);
     issueLines = [];
     renderIssueLines();
-    toast('Issue #' + result.voucherNo + ' created');
+    toast('Issue #' + result.voucherNo + ' created — stock updated');
     printVoucher(result);
   }catch(e){
     toast(e.message || 'Could not create issue', true);
@@ -544,21 +617,41 @@ onSnapshot(query(collection(db, 'issues'), orderBy('voucherNo', 'desc')), snap =
   issues = snap.docs.map(d => ({id: d.id, ...d.data()}));
   renderHistory();
 });
+onSnapshot(query(collection(db, 'receipts'), orderBy('date', 'desc')), snap => {
+  receipts = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  renderHistory();
+});
 
 function renderHistory(){
   const el = $('historyList');
-  if(!issues.length){
-    el.innerHTML = `<div class="empty"><div class="ic">📜</div><p>No issues recorded yet</p></div>`;
+  const entries = [
+    ...issues.map(iss => ({...iss, _type:'issue', _sortKey: iss.date + '_' + (iss.voucherNo||0)})),
+    ...receipts.map(r => ({...r, _type:'receipt', _sortKey: r.date + '_r'}))
+  ].sort((a,b) => b._sortKey.localeCompare(a._sortKey));
+
+  if(!entries.length){
+    el.innerHTML = `<div class="empty"><div class="ic">📜</div><p>No issues or receipts recorded yet</p></div>`;
     return;
   }
-  el.innerHTML = issues.map(iss => `
-    <div class="row" style="cursor:pointer;" onclick="window.__reprint('${iss.id}')">
-      <div class="row-main">
-        <div class="row-title">#${iss.voucherNo} · ${esc(iss.institutionName)}</div>
-        <div class="row-sub">${esc(iss.date)} · ${iss.items.length} item${iss.items.length===1?'':'s'}</div>
-      </div>
-      <div class="row-actions"><button class="btn ghost sm">🖨️ Print</button></div>
-    </div>`).join('');
+  el.innerHTML = entries.map(en => {
+    if(en._type === 'issue'){
+      return `
+      <div class="row" style="cursor:pointer;" onclick="window.__reprint('${en.id}')">
+        <div class="row-main">
+          <div class="row-title">↑ #${en.voucherNo} · ${esc(en.institutionName)}</div>
+          <div class="row-sub">${esc(en.date)} · ${en.items.length} item${en.items.length===1?'':'s'} issued</div>
+        </div>
+        <div class="row-actions"><button class="btn ghost sm">🖨️ Print</button></div>
+      </div>`;
+    }
+    return `
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">↓ Received from ${esc(en.source||'—')}</div>
+          <div class="row-sub">${esc(en.date)} · ${en.items.length} item${en.items.length===1?'':'s'} received</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 window.__reprint = (id) => {
   const iss = issues.find(i => i.id === id);
@@ -590,6 +683,78 @@ function printVoucher(iss){
   `;
   setTimeout(() => window.print(), 80);
 }
+
+// ---------- Receive stock ----------
+function renderReceiveLines(){
+  const el = $('receiveLines');
+  $('receiveLinesEmpty').style.display = receiveLines.length ? 'none' : 'block';
+  el.innerHTML = receiveLines.map((l, idx) => `
+    <div class="li-item">
+      <span class="nm">${esc(l.name)}${l.batch ? ' · '+esc(l.batch) : ''}</span>
+      <span class="qv">${fmtNum(l.qty)} ${esc(l.unit||'')}</span>
+      <button onclick="window.__rmReceiveLine(${idx})">✕</button>
+    </div>`).join('');
+}
+window.__rmReceiveLine = (idx) => { receiveLines.splice(idx,1); renderReceiveLines(); };
+
+$('btnReceiveStock').addEventListener('click', () => {
+  receiveLines = [];
+  $('receiveDate').value = new Date().toISOString().slice(0,10);
+  $('receiveMedName').value = ''; $('receiveUnit').value = ''; $('receiveBatch').value = '';
+  $('receiveExpiry').value = ''; $('receiveQty').value = '';
+  renderReceiveLines();
+  $('receiveOverlay').classList.add('show');
+});
+$('receiveSheetClose').addEventListener('click', () => $('receiveOverlay').classList.remove('show'));
+
+$('btnAddReceiveLine').addEventListener('click', () => {
+  const name = $('receiveMedName').value.trim();
+  const qty = parseFloat($('receiveQty').value);
+  if(!name) return toast('Enter a medicine name', true);
+  if(isNaN(qty) || qty <= 0) return toast('Enter a valid quantity', true);
+  receiveLines.push({
+    name, unit: $('receiveUnit').value.trim(), batch: $('receiveBatch').value.trim(),
+    expiry: $('receiveExpiry').value, qty
+  });
+  $('receiveMedName').value=''; $('receiveUnit').value=''; $('receiveBatch').value='';
+  $('receiveExpiry').value=''; $('receiveQty').value='';
+  renderReceiveLines();
+});
+
+$('btnSaveReceive').addEventListener('click', async () => {
+  if(!receiveLines.length) return toast('Add at least one item', true);
+  const source = $('receiveSource').value.trim();
+  const date = $('receiveDate').value || new Date().toISOString().slice(0,10);
+  const btn = $('btnSaveReceive');
+  btn.disabled = true;
+  try{
+    for(const line of receiveLines){
+      const existing = medicines.find(m => m.name.toLowerCase() === line.name.toLowerCase());
+      if(existing){
+        await updateDoc(doc(db,'medicines',existing.id), {
+          stock: (existing.stock||0) + line.qty,
+          unit: line.unit || existing.unit || '',
+          batch: line.batch || existing.batch || '',
+          expiry: line.expiry || existing.expiry || ''
+        });
+      }else{
+        await addDoc(collection(db,'medicines'), {
+          name: line.name, unit: line.unit, stock: line.qty,
+          batch: line.batch, expiry: line.expiry, threshold: 10, createdAt: serverTimestamp()
+        });
+      }
+    }
+    await addDoc(collection(db,'receipts'), { source, date, items: receiveLines, createdAt: serverTimestamp() });
+    receiveLines = [];
+    renderReceiveLines();
+    $('receiveOverlay').classList.remove('show');
+    toast('Receipt saved — stock updated');
+  }catch(e){
+    toast('Could not save receipt: ' + e.message, true);
+  }finally{
+    btn.disabled = false;
+  }
+});
 
 // ---------- E-Aushadhi PDF import ----------
 $('btnPdfImport').addEventListener('click', () => $('pdfInput').click());
