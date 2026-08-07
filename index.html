@@ -475,7 +475,11 @@ function openBatchModal(itemId){
   document.getElementById('bmBatchNo').value = '';
   document.getElementById('bmMfgDate').value = '';
   document.getElementById('bmExpiryDate').value = '';
-  document.getElementById('bmQty').value = '';
+  const existingBatchCount = batchesData[itemId] ? Object.keys(batchesData[itemId]).length : 0;
+  const currentQty = getQty(itemId);
+  // First batch for this drug and it already has a stock quantity set — pre-fill so it doesn't have to be retyped.
+  // If batches already exist, leave blank (the current total may already be split across them).
+  document.getElementById('bmQty').value = (existingBatchCount === 0 && typeof currentQty === 'number') ? currentQty : '';
   document.getElementById('batchModal').style.display = 'flex';
   renderBatchModalList();
 }
