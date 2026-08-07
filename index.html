@@ -509,6 +509,21 @@ function renderBatchModalList(){
     </div>`;
   }).join('');
 }
+function recomputeAvailFromBatches(itemId){
+  // Re-reads batches fresh from Firebase (avoids any timing gap with the local cache),
+  // sums their qty, and sets that as the drug's main available quantity.
+  // If no batches remain, leaves the existing quantity untouched rather than zeroing it.
+  batchesRef.child(itemId).once('value').then(snap=>{
+    const batches = snap.val() || {};
+    const ids = Object.keys(batches);
+    if(!ids.length) return;
+    const sum = ids.reduce((s,id)=>{
+      const q = batches[id].qty;
+      return s + (typeof q === 'number' ? q : 0);
+    }, 0);
+    availRef.child(itemId).set(sum);
+  });
+}
 function addBatch(){
   const batchNo = document.getElementById('bmBatchNo').value.trim();
   const mfgDate = document.getElementById('bmMfgDate').value;
@@ -521,6 +536,7 @@ function addBatch(){
   if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
   batchesRef.child(batchModalItemId).push({batchNo, mfgDate, expiryDate, qty})
     .then(()=>{
+      recomputeAvailFromBatches(batchModalItemId);
       document.getElementById('bmBatchNo').value = '';
       document.getElementById('bmMfgDate').value = '';
       document.getElementById('bmExpiryDate').value = '';
@@ -535,7 +551,9 @@ function addBatch(){
 }
 function deleteBatch(batchId){
   if(!confirm('Delete this batch record?')) return;
-  batchesRef.child(batchModalItemId).child(batchId).remove();
+  const itemId = batchModalItemId;
+  batchesRef.child(itemId).child(batchId).remove()
+    .then(()=> recomputeAvailFromBatches(itemId));
 }
 batchesRef.on('value', ()=>{ if(batchModalItemId) renderBatchModalList(); });
 
