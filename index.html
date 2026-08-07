@@ -971,6 +971,7 @@ Object.keys(DRUGS_BY_CAT).forEach(cat=>{
 });
 
 let pendingImport = null; // {id: qty, ...}
+let pendingImportBatches = null; // {id: [{batchNo,mfgDate,expiryDate,qty}, ...], ...}
 
 document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
@@ -994,26 +995,89 @@ document.getElementById('pdfFileInput').addEventListener('change', async (e)=>{
   e.target.value = ''; // allow re-selecting the same file later
 });
 
+/* ---- e-Aushadhi "Stock In Hand Report" format (has Batch No./Mfg Date/Expiry Date columns) ----
+   Row layout: S.No ItemName [code][type] code AML/EML/GC/... GroupName ItemType
+               BatchNo MfgDate ExpiryDate PONo SupplierName Rate/Unit QtyActive QtyTotal Value
+   We anchor on the two consecutive "Mon/YYYY" dates (Mfg then Expiry) since free-text fields
+   (item/group/supplier names) vary too much to regex directly, but dates are always this shape. */
+const MONTH_NUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+function parseMonYear(tok){
+  const m = tok.match(/^([A-Za-z]{3})\/(\d{4})$/);
+  if(!m) return '';
+  const mm = MONTH_NUM[m[1]];
+  return mm ? `${m[2]}-${mm}-01` : '';
+}
+function parseStockInHandFormat(norm){
+  const codeRe = /\[(\d+(?:\.\d+)?)\]\s*\[[^\]]*\]\s+\1\b/g;
+  const rowStarts = [];
+  let m;
+  while((m = codeRe.exec(norm)) !== null){
+    rowStarts.push({code: m[1], afterIdx: codeRe.lastIndex});
+  }
+  const dateTokRe = /\b([A-Za-z]{3}\/\d{4})\b/g;
+  const qtyTailRe = /\b(\d+)\s+(\d+)\s+[\d,]*\.?\d+/;
+  const totals = {};
+  const batchesByCode = {};
+  let rowCount = 0;
+  for(let i=0; i<rowStarts.length; i++){
+    const chunkStart = rowStarts[i].afterIdx;
+    // use the next row's own bracket start as the boundary (safe: everything we need for THIS row appears before it)
+    const nextRowRawStart = (i+1 < rowStarts.length) ? norm.indexOf('[' + rowStarts[i+1].code, chunkStart) : norm.length;
+    const chunk = norm.slice(chunkStart, nextRowRawStart > 0 ? nextRowRawStart : norm.length);
+    dateTokRe.lastIndex = 0;
+    const d1 = dateTokRe.exec(chunk);
+    if(!d1) continue;
+    const d2 = dateTokRe.exec(chunk);
+    if(!d2) continue;
+    const before = chunk.slice(0, d1.index).trim().split(/\s+/);
+    const batchNo = before.length ? before[before.length-1] : '';
+    const mfgDate = parseMonYear(d1[1]);
+    const expiryDate = parseMonYear(d2[1]);
+    const afterDates = chunk.slice(d2.index + d2[0].length);
+    const qm = qtyTailRe.exec(afterDates);
+    if(!qm) continue;
+    const qty = parseInt(qm[1], 10) || 0;
+    const code = rowStarts[i].code;
+    if(!CODE_LOOKUP[code]) continue; // not a drug/item on our board — skip (reagents, etc.)
+    totals[code] = (totals[code] || 0) + qty;
+    (batchesByCode[code] = batchesByCode[code] || []).push({batchNo, mfgDate, expiryDate, qty});
+    rowCount++;
+  }
+  return {totals, batchesByCode, rowCount};
+}
+
 function processExtractedText(text){
   const norm = text.replace(/\s+/g, ' ');
-  const totals = {}; // code -> summed active qty
+  let totals = {}; // code -> summed active qty
+  let batchesByCode = {}; // code -> [{batchNo,mfgDate,expiryDate,qty}, ...]
   let rowCount = 0;
+  let hasBatchData = false;
 
-  // Format A: "Stock In Hand Report" — e.g.
+  // Batch-aware format: e-Aushadhi "Stock In Hand Report" with Batch No./Mfg Date/Expiry Date columns
+  if(/Batch\s*No\.?/i.test(norm) || /Stock In Hand Report/i.test(norm)){
+    const res = parseStockInHandFormat(norm);
+    if(res.rowCount > 0){
+      totals = res.totals;
+      batchesByCode = res.batchesByCode;
+      rowCount = res.rowCount;
+      hasBatchData = true;
+    }
+  }
+
+  // Format A: simpler quantity-only report — e.g.
   // "Aceclofenac 100mg Tab [2193][U] 2193 AML Tablet 13000 13000"
   // code, then repeated code, then a word (type/category), then two qty numbers.
   // We take the first of the two numbers (Qty. Ready for Issue).
-  const reA = /\[(\d+(?:\.\d+)?)\]\s*\[[^\]]*\]\s+\1\s+[A-Za-z][A-Za-z ,\/\-]*?\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\b/g;
-  let m;
-  while((m = reA.exec(norm)) !== null){
-    const code = m[1];
-    const qty = parseInt(m[2], 10) || 0;
-    // only count it if this code is actually one of our known drugs —
-    // this automatically skips surgical/consumable/misc items without
-    // needing to read the AML/EML/GC label at all.
-    if(CODE_LOOKUP[code]){
-      totals[code] = (totals[code] || 0) + qty;
-      rowCount++;
+  if(rowCount === 0){
+    const reA = /\[(\d+(?:\.\d+)?)\]\s*\[[^\]]*\]\s+\1\s+[A-Za-z][A-Za-z ,\/\-]*?\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\b/g;
+    let m;
+    while((m = reA.exec(norm)) !== null){
+      const code = m[1];
+      const qty = parseInt(m[2], 10) || 0;
+      if(CODE_LOOKUP[code]){
+        totals[code] = (totals[code] || 0) + qty;
+        rowCount++;
+      }
     }
   }
 
@@ -1021,6 +1085,7 @@ function processExtractedText(text){
   // "[1188][U] 1188 EML ... 6.18/ No. 1975 1975 12205.5"
   if(rowCount === 0){
     const reB = /\[(\d+(?:\.\d+)?)\]\[[US]\]\s+\1\s+(EML|AML)\b[\s\S]*?[\d.]+\/\s*(?:No\.|1Box|Pair|100\s*tablet\/Capsule)\s+(\d+)\s+\d+\s+[\d.]+/g;
+    let m;
     while((m = reB.exec(norm)) !== null){
       const code = m[1];
       const qty = parseInt(m[3], 10) || 0;
@@ -1033,7 +1098,7 @@ function processExtractedText(text){
   Object.keys(totals).forEach(code=>{
     const hits = CODE_LOOKUP[code];
     if(hits && hits.length){
-      hits.forEach(h=> matched.push({id: h.id, name: h.name, qty: totals[code]}));
+      hits.forEach(h=> matched.push({id: h.id, name: h.name, qty: totals[code], code}));
     }
   });
 
@@ -1045,13 +1110,30 @@ function processExtractedText(text){
   pendingImport = {};
   matched.forEach(d=> pendingImport[d.id] = d.qty);
 
+  pendingImportBatches = null;
+  let batchDrugCount = 0, batchRowTotal = 0;
+  if(hasBatchData){
+    pendingImportBatches = {};
+    matched.forEach(d=>{
+      const list = batchesByCode[d.code];
+      if(list && list.length){
+        pendingImportBatches[d.id] = list;
+        batchDrugCount++;
+        batchRowTotal += list.length;
+      }
+    });
+  }
+
   const body = document.getElementById('importBody');
   document.getElementById('importTitle').textContent = `Found ${matched.length} matching drugs`;
-  let html = `<p style="margin-top:0;color:#4a5c56;">Reading found ${rowCount} stock rows in the PDF. These quantities will be set on your board (any drug not in this report keeps its current value):</p>`;
+  let html = `<p style="margin-top:0;color:#4a5c56;">Reading found ${rowCount} stock rows in the PDF. These quantities will be set on your board (any drug not in this report keeps its current value)`
+    + (hasBatchData ? `, and ${batchRowTotal} batch records (batch no., mfg date, expiry date) will be saved for ${batchDrugCount} drugs — replacing any previously recorded batches for those drugs.` : '.')
+    + `</p>`;
   html += '<div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;">';
   matched.sort((a,b)=>a.name.localeCompare(b.name)).forEach(d=>{
+    const bCount = pendingImportBatches && pendingImportBatches[d.id] ? pendingImportBatches[d.id].length : 0;
     html += `<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #EEF5F2;font-size:.85rem;">
-      <span>${d.name}</span><b>${d.qty}</b></div>`;
+      <span>${d.name}${bCount ? ` <span style="color:#6b46c1;">(${bCount} batch${bCount>1?'es':''})</span>` : ''}</span><b>${d.qty}</b></div>`;
   });
   html += '</div>';
   body.innerHTML = html;
@@ -1066,6 +1148,7 @@ function setImportStatus(msg){
 
 function openImportModal(){
   pendingImport = null;
+  pendingImportBatches = null;
   document.getElementById('importModal').style.display = 'flex';
 }
 function closeImportModal(){
@@ -1073,8 +1156,20 @@ function closeImportModal(){
 }
 function confirmImport(){
   if(!pendingImport) return;
-  availRef.update(pendingImport);
-  closeImportModal();
+  const btn = document.getElementById('confirmImportBtn');
+  const writes = [availRef.update(pendingImport)];
+  if(pendingImportBatches){
+    Object.keys(pendingImportBatches).forEach(itemId=>{
+      const obj = {};
+      pendingImportBatches[itemId].forEach((b,idx)=>{ obj['b'+idx] = b; });
+      writes.push(batchesRef.child(itemId).set(obj));
+    });
+  }
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
+  Promise.all(writes)
+    .then(()=>{ closeImportModal(); })
+    .catch(err=>{ alert('Import failed to save: ' + err.message + '\n\nCheck your connection and try again.'); })
+    .finally(()=>{ if(btn){ btn.disabled = false; btn.textContent = 'Import Quantities'; } });
 }
 
 /* ================= PRINT AVAILABLE STOCK ================= */
