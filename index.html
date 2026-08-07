@@ -222,6 +222,7 @@
         <button onclick="printEmergencyDrugs()" style="background:var(--red);color:#fff;border-color:var(--red);">🖨️ Print Emergency Drugs</button>
         <button onclick="printLasaList()" style="background:var(--amber);color:#fff;border-color:var(--amber);">🖨️ Print LASA list</button>
         <button onclick="printDrugReference()" style="background:#6b46c1;color:#fff;border-color:#6b46c1;">🖨️ Print Drug Reference</button>
+        <button onclick="printBatches()" style="background:#6b46c1;color:#fff;border-color:#6b46c1;">🖨️ Print Batches & Expiry</button>
         <button onclick="openLasaPairModal()" style="background:var(--amber);color:#fff;border-color:var(--amber);">⚠ Edit LASA pairs</button>
         <button onclick="openDrugRefModal()" style="background:#6b46c1;color:#fff;border-color:#6b46c1;">💊 Drug Reference</button>
       </div>
@@ -1106,6 +1107,47 @@ function printStockList(){
   <h1>${FACILITY_NAME} — Available Drug Stock</h1>
   <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${totalAvail} drugs available</div>
   ${bodyHtml}
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=> win.print(), 400);
+}
+
+/* ================= PRINT BATCHES & EXPIRY ================= */
+function printBatches(){
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  const all = allBatchesFlat();
+  const rows = all.map((b,i)=>{
+    const st = expiryStatus(b.expiryDate);
+    const rowColor = st.cls === 'exp-expired' ? '#FBEAE8' : (st.cls === 'exp-soon' ? '#FDF3E3' : '');
+    return `<tr style="background:${rowColor};">
+      <td>${i+1}</td><td>${b.name}</td><td>${b.code}</td><td>${b.batchNo||'—'}</td>
+      <td>${b.mfgDate||'—'}</td><td>${b.expiryDate||'—'}</td><td>${b.qty ?? '—'}</td>
+      <td>${st.label||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${FACILITY_NAME} - Batches & Expiry - ${dateStr}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif; color:#111; margin:24px;}
+    h1{font-size:1.3rem; margin-bottom:2px; color:#6b46c1;}
+    .sub{color:#555; font-size:.9rem; margin-bottom:18px;}
+    table{width:100%; border-collapse:collapse; margin-bottom:10px; font-size:.8rem;}
+    th,td{border:1px solid #ccc; padding:4px 8px; text-align:left; vertical-align:top;}
+    th{background:#F1EBFB; color:#6b46c1;}
+    td:first-child, th:first-child{width:26px; text-align:center;}
+    @media print{ body{margin:8mm;} }
+  </style></head><body>
+  <h1>🧪 ${FACILITY_NAME} — Batches &amp; Expiry</h1>
+  <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${all.length} batches recorded &nbsp;|&nbsp;
+    <span style="color:#B3402E;">red = expired</span>, <span style="color:#C97A2B;">amber = expiring within 90 days</span></div>
+  <table><thead><tr><th>#</th><th>Drug</th><th>Code</th><th>Batch No.</th><th>Mfg Date</th><th>Expiry Date</th><th>Qty</th><th>Status</th></tr></thead>
+  <tbody>${rows || '<tr><td colspan="8" style="text-align:center;color:#888;">No batches recorded yet.</td></tr>'}</tbody></table>
   </body></html>`);
   win.document.close();
   win.focus();
