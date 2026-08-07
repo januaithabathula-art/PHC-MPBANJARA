@@ -109,6 +109,15 @@
   .ref-card .ref-row b{color:#333;}
   .ref-card .ref-contra{color:var(--red);}
   .ref-card .ref-serious{color:var(--amber);}
+  .batch-card.exp-expired{border-left-color:var(--red);}
+  .batch-card.exp-soon{border-left-color:var(--amber);}
+  .batch-card.exp-ok{border-left-color:var(--green);}
+  .exp-badge{font-size:.72rem; font-weight:700; color:#fff; border-radius:5px; padding:1px 7px; margin-left:8px;}
+  .exp-badge.exp-expired{background:var(--red);}
+  .exp-badge.exp-soon{background:var(--amber);}
+  .exp-badge.exp-ok{background:var(--green);}
+  .batchbtn{margin-left:8px; font-size:.75rem; padding:3px 8px; border-radius:6px; border:1px solid #6b46c1;
+    background:#F1EBFB; color:#6b46c1; cursor:pointer; white-space:nowrap;}
   .lasa-pair.lookalike{border-left:6px solid #2E86C1;}
   .lasa-pair .names{display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:1.08rem; font-weight:700;}
   .lasa-pair .arrow{color:var(--red); font-size:1.2rem; font-weight:800;}
@@ -278,6 +287,30 @@
   </div>
 </div>
 
+<!-- Batch / Expiry tracking modal -->
+<div id="batchModal" style="display:none; position:fixed; inset:0; background:rgba(11,46,39,.55); z-index:50; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; max-width:520px; width:92%; max-height:85vh; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <b>🧪 Batches — <span id="batchModalDrugName"></span></b>
+      <button onclick="closeBatchModal()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:14px 20px; border-bottom:1px solid var(--line); display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <input type="text" id="bmBatchNo" placeholder="Batch No." style="padding:8px; border:1px solid var(--line); border-radius:6px; grid-column:1/3;">
+      <div>
+        <label style="font-size:.75rem; color:#5a6d67;">Mfg. date</label>
+        <input type="date" id="bmMfgDate" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:.75rem; color:#5a6d67;">Expiry date</label>
+        <input type="date" id="bmExpiryDate" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box;">
+      </div>
+      <input type="number" min="0" id="bmQty" placeholder="Qty in this batch" style="padding:8px; border:1px solid var(--line); border-radius:6px; grid-column:1/3;">
+      <button onclick="addBatch()" style="grid-column:1/3; padding:9px; border:none; border-radius:6px; background:#6b46c1; color:#fff; font-weight:700; cursor:pointer;">+ Add batch</button>
+    </div>
+    <div id="batchModalList" style="padding:14px 20px; overflow:auto; flex:1; font-size:.9rem;"></div>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -314,6 +347,8 @@ const urlParams = new URLSearchParams(location.search);
 const FACILITY_ID = (urlParams.get('f') || 'mpbanjara').trim();
 const FACILITY_NAME = FACILITIES[FACILITY_ID] || FACILITY_ID; // fall back to the raw code if not yet registered
 const availRef = db.ref('facilities/' + FACILITY_ID + '/drugAvailability');
+const batchesRef = db.ref('facilities/' + FACILITY_ID + '/drugBatches');
+let batchesData = {}; // { itemId: { batchPushId: {batchNo, mfgDate, expiryDate, qty} } }
 
 const ADMIN_PIN = (typeof FACILITY_PINS !== 'undefined' && FACILITY_PINS[FACILITY_ID])
   || (typeof DEFAULT_PIN !== 'undefined' ? DEFAULT_PIN : "1947");
@@ -351,7 +386,8 @@ const CAT_LABELS = {
   'Malaria-Drugs':{en:'🦟 Malaria Drugs', te:'మలేరియా మందులు'},
   'TB-Drugs':{en:'🫁 TB Drugs (NTEP)', te:'క్షయ మందులు'},
   'LASA-Drugs':{en:'⚠ LASA Drugs', te:'ఒకేలా కనిపించే మందులు'},
-  'Drug-Reference':{en:'💊 Drug Reference', te:'ఔషధ సమాచారం'}
+  'Drug-Reference':{en:'💊 Drug Reference', te:'ఔషధ సమాచారం'},
+  'Drug-Batches':{en:'🧪 Batches & Expiry', te:'బ్యాచ్‌లు & గడువు'}
 };
 const CAT_ORDER = Object.keys(CAT_LABELS);
 
@@ -426,6 +462,63 @@ lasaPairsRef.on('value', snap=>{
 function allLasaPairs(){
   return LASA_PAIRS.concat(Object.values(customPairs));
 }
+
+let batchModalItemId = null;
+function openBatchModal(itemId){
+  batchModalItemId = itemId;
+  const drug = ID_TO_DRUG[itemId];
+  document.getElementById('batchModalDrugName').textContent = drug ? drug.name : itemId;
+  document.getElementById('bmBatchNo').value = '';
+  document.getElementById('bmMfgDate').value = '';
+  document.getElementById('bmExpiryDate').value = '';
+  document.getElementById('bmQty').value = '';
+  document.getElementById('batchModal').style.display = 'flex';
+  renderBatchModalList();
+}
+function closeBatchModal(){
+  document.getElementById('batchModal').style.display = 'none';
+  batchModalItemId = null;
+}
+function renderBatchModalList(){
+  const container = document.getElementById('batchModalList');
+  const batches = batchesData[batchModalItemId] || {};
+  const ids = Object.keys(batches);
+  if(!ids.length){
+    container.innerHTML = `<p style="color:#8a9a94;text-align:center;">No batches recorded yet for this drug.</p>`;
+    return;
+  }
+  const sorted = ids.map(id=>({id, ...batches[id]}))
+    .sort((a,b)=>(a.expiryDate||'9999').localeCompare(b.expiryDate||'9999'));
+  container.innerHTML = sorted.map(b=>{
+    const st = expiryStatus(b.expiryDate);
+    return `<div class="ref-card batch-card ${st.cls}" style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+      <div>
+        <div class="ref-row"><b>Batch:</b> ${b.batchNo||'—'} &nbsp; <b>Qty:</b> ${b.qty ?? '—'}</div>
+        <div class="ref-row"><b>Mfg:</b> ${b.mfgDate||'—'} &nbsp; <b>Expiry:</b> ${b.expiryDate||'—'}
+          ${st.label ? `<span class="exp-badge ${st.cls}">${st.label}</span>` : ''}</div>
+      </div>
+      <button onclick="deleteBatch('${b.id}')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:1.1rem;">🗑</button>
+    </div>`;
+  }).join('');
+}
+function addBatch(){
+  const batchNo = document.getElementById('bmBatchNo').value.trim();
+  const mfgDate = document.getElementById('bmMfgDate').value;
+  const expiryDate = document.getElementById('bmExpiryDate').value;
+  const qtyRaw = document.getElementById('bmQty').value.trim();
+  if(!batchNo && !expiryDate){ alert('Enter at least a batch number or expiry date.'); return; }
+  const qty = qtyRaw === '' ? null : Math.max(0, parseInt(qtyRaw,10) || 0);
+  batchesRef.child(batchModalItemId).push({batchNo, mfgDate, expiryDate, qty});
+  document.getElementById('bmBatchNo').value = '';
+  document.getElementById('bmMfgDate').value = '';
+  document.getElementById('bmExpiryDate').value = '';
+  document.getElementById('bmQty').value = '';
+}
+function deleteBatch(batchId){
+  if(!confirm('Delete this batch record?')) return;
+  batchesRef.child(batchModalItemId).child(batchId).remove();
+}
+batchesRef.on('value', ()=>{ if(batchModalItemId) renderBatchModalList(); });
 
 function openDrugRefModal(){
   document.getElementById('drugRefModal').style.display = 'flex';
@@ -512,8 +605,31 @@ function lasaPosterHtml(){
   </div>`;
 }
 
+// flat id -> {name, code} lookup across the whole catalog, used for batch display
+const ID_TO_DRUG = {};
+Object.keys(DRUGS_BY_CAT).forEach(cat=>{
+  DRUGS_BY_CAT[cat].forEach(it=>{ ID_TO_DRUG[it.id] = it; });
+});
+
+function allBatchesFlat(){
+  const out = [];
+  Object.keys(batchesData).forEach(itemId=>{
+    const drug = ID_TO_DRUG[itemId];
+    if(!drug) return;
+    const batches = batchesData[itemId] || {};
+    Object.keys(batches).forEach(batchId=>{
+      const b = batches[batchId];
+      out.push({id: itemId+'::'+batchId, itemId, batchId, name: drug.name, code: drug.code,
+        batchNo: b.batchNo||'', mfgDate: b.mfgDate||'', expiryDate: b.expiryDate||'', qty: b.qty});
+    });
+  });
+  out.sort((a,b)=> (a.expiryDate||'9999').localeCompare(b.expiryDate||'9999'));
+  return out;
+}
+
 function getCatItems(cat){
   if(cat === 'Drug-Reference') return DRUG_REFERENCE;
+  if(cat === 'Drug-Batches') return allBatchesFlat();
   if(cat !== 'LASA-Drugs') return DRUGS_BY_CAT[cat] || [];
   const seen = new Set();
   const out = [];
@@ -528,6 +644,30 @@ function getCatItems(cat){
   });
   out.sort((a,b)=>a.name.localeCompare(b.name));
   return out;
+}
+
+function expiryStatus(expiryDate){
+  if(!expiryDate) return {label:'', cls:''};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp = new Date(expiryDate);
+  const days = Math.round((exp - today) / 86400000);
+  if(days < 0) return {label:'EXPIRED', cls:'exp-expired'};
+  if(days <= 90) return {label:`${days}d left`, cls:'exp-soon'};
+  return {label:'OK', cls:'exp-ok'};
+}
+function batchCardHtml(b){
+  const st = expiryStatus(b.expiryDate);
+  return `<div class="ref-card batch-card ${st.cls}">
+    <div class="ref-name">${b.name} <span class="code-inline">#${b.code}</span></div>
+    <div class="ref-row"><b>Batch No:</b> ${b.batchNo || '—'} &nbsp; <b>Qty:</b> ${b.qty ?? '—'}</div>
+    <div class="ref-row"><b>Mfg:</b> ${b.mfgDate || '—'} &nbsp; <b>Expiry:</b> ${b.expiryDate || '—'}
+      ${st.label ? `<span class="exp-badge ${st.cls}">${st.label}</span>` : ''}</div>
+  </div>`;
+}
+function drugBatchesPosterHtml(){
+  const all = allBatchesFlat();
+  if(!all.length) return `<div class="dv-empty">No batch/expiry data recorded yet.</div>`;
+  return `<div style="max-width:900px;">${all.map(batchCardHtml).join('')}</div>`;
 }
 
 function drugRefCardHtml(it){
@@ -553,6 +693,12 @@ availRef.on('value', snap => {
   renderDisplay();
   if(!document.getElementById('adminBody').classList.contains('hidden')) renderAdmin();
   flashSaved();
+});
+
+batchesRef.on('value', snap => {
+  batchesData = snap.val() || {};
+  renderDisplay();
+  if(!document.getElementById('adminBody').classList.contains('hidden')) renderAdmin();
 });
 
 let firstLoad = true;
@@ -601,6 +747,10 @@ function catDuration(c){
     // longer cards, ~5s reading time per drug, capped
     return Math.min(240000, 20000 + DRUG_REFERENCE.length * 5000);
   }
+  if(c === 'Drug-Batches'){
+    const n = allBatchesFlat().length;
+    return Math.min(240000, 15000 + n * 4000);
+  }
   const n = getCatItems(c).filter(it=>isAvailable(it.id)).length;
   // more drugs => more time on screen, so everything gets scrolled into view
   // at an easily readable pace
@@ -629,6 +779,8 @@ function renderDisplay(){
       grid = lasaPosterHtml();
     } else if(c === 'Drug-Reference'){
       grid = drugReferencePosterHtml();
+    } else if(c === 'Drug-Batches'){
+      grid = drugBatchesPosterHtml();
     } else {
       const items = getCatItems(c).filter(it=>isAvailable(it.id));
       const threshold = lowThreshold(c);
@@ -648,19 +800,29 @@ function renderDisplay(){
               : `<span class="code-inline">#${it.code}</span>`;
             const nameHtml = (c === 'Emergency-Drugs' || c === 'Malaria-Drugs' || c === 'TB-Drugs') ? `${it.name} ${codeBadge}` : it.name;
             const emgClass = (c === 'Emergency-Drugs' || c === 'Malaria-Drugs' || c === 'TB-Drugs') ? 'emg' : '';
-            return `<div class="dv-item ${low?'low':''} ${emgClass}">${nameHtml}${emgHtml}${qtyHtml}</div>`;
+            // nearest-expiry badge, if this drug has any tracked batches
+            let expHtml = '';
+            const itBatches = batchesData[it.id];
+            if(itBatches){
+              const dates = Object.values(itBatches).map(b=>b.expiryDate).filter(Boolean).sort();
+              if(dates.length){
+                const st = expiryStatus(dates[0]);
+                if(st.cls !== 'exp-ok') expHtml = `<span class="exp-badge ${st.cls}">${st.label} (batch)</span>`;
+              }
+            }
+            return `<div class="dv-item ${low?'low':''} ${emgClass}">${nameHtml}${emgHtml}${qtyHtml}${expHtml}</div>`;
           }).join('')
         : `<div class="dv-empty">No drugs marked available in this category right now.</div>`;
     }
-    const gridStyle = (c === 'LASA-Drugs' || c === 'Drug-Reference') ? ' style="display:block;"' : '';
+    const gridStyle = (c === 'LASA-Drugs' || c === 'Drug-Reference' || c === 'Drug-Batches') ? ' style="display:block;"' : '';
     return `<div class="dv-panel ${c===dvActiveCat?'active':''}" data-cat="${c}">
         <div class="dv-heading">${lbl.en} <span class="te">${lbl.te}</span></div>
         <div class="dv-grid"${gridStyle}>${grid}</div>
       </div>`;
   }).join('');
 
-  const totalAvail = catsWithData.filter(c=>c!=='Drug-Reference').reduce((n,c)=>n + getCatItems(c).filter(it=>isAvailable(it.id)).length, 0);
-  const totalAll = catsWithData.filter(c=>c!=='Drug-Reference').reduce((n,c)=>n + getCatItems(c).length, 0);
+  const totalAvail = catsWithData.filter(c=>c!=='Drug-Reference' && c!=='Drug-Batches').reduce((n,c)=>n + getCatItems(c).filter(it=>isAvailable(it.id)).length, 0);
+  const totalAll = catsWithData.filter(c=>c!=='Drug-Reference' && c!=='Drug-Batches').reduce((n,c)=>n + getCatItems(c).length, 0);
   document.getElementById('dvCount').textContent = `${totalAvail} of ${totalAll} drugs available`;
 
   scheduleActivePanel();
@@ -726,7 +888,7 @@ function renderAdmin(){
   let html = '';
 
   CAT_ORDER.forEach(c=>{
-    if(c === 'Drug-Reference') return; // reference-only, not real stock — no code/qty to edit
+    if(c === 'Drug-Reference' || c === 'Drug-Batches') return; // reference-only, not real stock — no code/qty to edit
     const items = getCatItems(c).filter(it=>{
       if(!q) return true;
       return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
@@ -740,10 +902,12 @@ function renderAdmin(){
       const q = getQty(it.id);
       if(av) availN++; else unavailN++;
       const qVal = (typeof q === 'number') ? q : '';
+      const batchCount = batchesData[it.id] ? Object.keys(batchesData[it.id]).length : 0;
       html += `<div class="rowitem">
           <input type="number" min="0" class="qtybox ${q===0?'zero':''}" data-id="${it.id}"
             placeholder="qty" value="${qVal}" oninput="setQty(this)">
           <span class="nm">${it.name}<span class="code">#${it.code}</span></span>
+          <button class="batchbtn" data-batch-id="${it.id}" onclick="openBatchModal(this.dataset.batchId)">🧪 ${batchCount ? batchCount+' batch'+(batchCount>1?'es':'') : 'Add batch'}</button>
         </div>`;
     });
     html += `</div>`;
@@ -910,7 +1074,7 @@ function printStockList(){
   let bodyHtml = '';
   let totalAvail = 0;
   CAT_ORDER.forEach(cat=>{
-    if(cat === 'LASA-Drugs' || cat === 'Drug-Reference') return; // avoid duplicating drugs already printed / not real stock
+    if(cat === 'LASA-Drugs' || cat === 'Drug-Reference' || cat === 'Drug-Batches') return; // avoid duplicating drugs already printed / not real stock
     const items = getCatItems(cat).filter(it=>isAvailable(it.id));
     if(!items.length) return;
     const lbl = CAT_LABELS[cat];
