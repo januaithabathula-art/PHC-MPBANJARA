@@ -1092,28 +1092,41 @@ function printStockList(){
     const lbl = CAT_LABELS[cat];
     totalAvail += items.length;
     bodyHtml += `<h3>${lbl.en} <span style="font-weight:400;color:#555;">(${lbl.te})</span></h3>`;
-    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Code</th><th>Qty</th></tr></thead><tbody>';
+    bodyHtml += '<table><thead><tr><th>#</th><th>Drug name</th><th>Code</th><th>Qty</th><th>Batch No.</th><th>Mfg Date</th><th>Expiry Date</th></tr></thead><tbody>';
     items.forEach((it,i)=>{
       const q = getQty(it.id);
-      bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${it.code}</td><td>${typeof q==='number' ? q : '-'}</td></tr>`;
+      const batches = batchesData[it.id];
+      if(batches && Object.keys(batches).length){
+        const sorted = Object.values(batches).sort((a,b)=>(a.expiryDate||'9999').localeCompare(b.expiryDate||'9999'));
+        const batchNos = sorted.map(b=>b.batchNo||'—').join('<br>');
+        const mfgDates = sorted.map(b=>b.mfgDate||'—').join('<br>');
+        const expDates = sorted.map(b=>{
+          const st = expiryStatus(b.expiryDate);
+          const color = st.cls==='exp-expired' ? '#B3402E' : (st.cls==='exp-soon' ? '#C97A2B' : '#111');
+          return `<span style="color:${color};">${b.expiryDate||'—'}</span>`;
+        }).join('<br>');
+        bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${it.code}</td><td>${typeof q==='number' ? q : '-'}</td><td>${batchNos}</td><td>${mfgDates}</td><td>${expDates}</td></tr>`;
+      } else {
+        bodyHtml += `<tr><td>${i+1}</td><td>${it.name}</td><td>${it.code}</td><td>${typeof q==='number' ? q : '-'}</td><td>—</td><td>—</td><td>—</td></tr>`;
+      }
     });
     bodyHtml += '</tbody></table>';
   });
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>PHC MP Banjara - Available Stock - ${dateStr}</title>
+  <title>${FACILITY_NAME} - Available Stock - ${dateStr}</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif; color:#111; margin:24px;}
     h1{font-size:1.3rem; margin-bottom:2px;}
     .sub{color:#555; font-size:.9rem; margin-bottom:18px;}
     h3{font-size:1rem; margin:18px 0 6px; border-bottom:2px solid #0B5D4C; padding-bottom:3px; color:#0B5D4C;}
-    table{width:100%; border-collapse:collapse; margin-bottom:10px; font-size:.85rem;}
-    th,td{border:1px solid #ccc; padding:4px 8px; text-align:left;}
+    table{width:100%; border-collapse:collapse; margin-bottom:10px; font-size:.78rem;}
+    th,td{border:1px solid #ccc; padding:4px 6px; text-align:left; vertical-align:top;}
     th{background:#EEF5F2;}
-    td:first-child, th:first-child{width:32px; text-align:center;}
-    td:last-child, th:last-child{width:70px; text-align:center;}
-    @media print{ body{margin:10mm;} }
+    td:first-child, th:first-child{width:28px; text-align:center;}
+    td:nth-child(4), th:nth-child(4){width:55px; text-align:center;}
+    @media print{ body{margin:10mm;} table{font-size:.7rem;} }
   </style></head><body>
   <h1>${FACILITY_NAME} — Available Drug Stock</h1>
   <div class="sub">Printed on ${dateStr} at ${timeStr} &nbsp;|&nbsp; ${totalAvail} drugs available</div>
