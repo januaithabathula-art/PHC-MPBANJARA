@@ -206,6 +206,9 @@
     <div class="toolbar">
       <div class="searchrow">
         <input type="text" id="searchBox" placeholder="Search drug name or code...">
+        <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:.85rem;color:#4a5c56;">
+          <input type="checkbox" id="missingBatchToggle" style="width:16px;height:16px;"> No batch info
+        </label>
       </div>
       <div class="stat">
         <span><b id="availCount">0</b> available</span>
@@ -895,6 +898,7 @@ document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key===
 
 function renderAdmin(){
   const q = (document.getElementById('searchBox').value||'').toLowerCase().trim();
+  const onlyMissing = document.getElementById('missingBatchToggle').checked;
   const container = document.getElementById('catContainer');
   let availN=0, unavailN=0, totalN=0;
   let html = '';
@@ -902,8 +906,12 @@ function renderAdmin(){
   CAT_ORDER.forEach(c=>{
     if(c === 'Drug-Reference' || c === 'Drug-Batches') return; // reference-only, not real stock — no code/qty to edit
     const items = getCatItems(c).filter(it=>{
-      if(!q) return true;
-      return it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q);
+      if(q && !(it.name.toLowerCase().includes(q) || String(it.code).toLowerCase().includes(q))) return false;
+      if(onlyMissing){
+        const bCount = batchesData[it.id] ? Object.keys(batchesData[it.id]).length : 0;
+        if(bCount > 0) return false;
+      }
+      return true;
     });
     if(!items.length) return;
     const lbl = CAT_LABELS[c];
@@ -959,6 +967,7 @@ function bulkSet(val){
 }
 
 document.getElementById('searchBox').addEventListener('input', renderAdmin);
+document.getElementById('missingBatchToggle').addEventListener('change', renderAdmin);
 
 /* ================= e-AUSHADHI PDF IMPORT ================= */
 // Build a lookup: item code (string) -> list of matching drugs in our master list
