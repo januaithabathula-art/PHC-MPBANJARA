@@ -507,13 +507,24 @@ function addBatch(){
   const mfgDate = document.getElementById('bmMfgDate').value;
   const expiryDate = document.getElementById('bmExpiryDate').value;
   const qtyRaw = document.getElementById('bmQty').value.trim();
+  if(!batchModalItemId){ alert('No drug selected — please close this and tap the 🧪 button on a drug row again.'); return; }
   if(!batchNo && !expiryDate){ alert('Enter at least a batch number or expiry date.'); return; }
   const qty = qtyRaw === '' ? null : Math.max(0, parseInt(qtyRaw,10) || 0);
-  batchesRef.child(batchModalItemId).push({batchNo, mfgDate, expiryDate, qty});
-  document.getElementById('bmBatchNo').value = '';
-  document.getElementById('bmMfgDate').value = '';
-  document.getElementById('bmExpiryDate').value = '';
-  document.getElementById('bmQty').value = '';
+  const btn = document.querySelector('#batchModal button[onclick="addBatch()"]');
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
+  batchesRef.child(batchModalItemId).push({batchNo, mfgDate, expiryDate, qty})
+    .then(()=>{
+      document.getElementById('bmBatchNo').value = '';
+      document.getElementById('bmMfgDate').value = '';
+      document.getElementById('bmExpiryDate').value = '';
+      document.getElementById('bmQty').value = '';
+    })
+    .catch(err=>{
+      alert('Save failed: ' + err.message + '\n\nThis usually means the connection dropped or sign-in hasn\'t completed yet — wait a few seconds and try again.');
+    })
+    .finally(()=>{
+      if(btn){ btn.disabled = false; btn.textContent = '+ Add batch'; }
+    });
 }
 function deleteBatch(batchId){
   if(!confirm('Delete this batch record?')) return;
